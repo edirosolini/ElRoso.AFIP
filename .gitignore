@@ -1,0 +1,186 @@
+############################################################
+# SISTEMA / EDITOR
+############################################################
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+############################################################
+# LOGS / DIAGNÓSTICO
+############################################################
+
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+############################################################
+# NODE / FRONTEND
+############################################################
+
+node_modules/
+jspm_packages/
+bower_components/
+web_modules/
+
+dist/
+build/
+out/
+coverage/
+.nyc_output/
+
+*.lcov
+*.tsbuildinfo
+
+.npm
+.eslintcache
+.parcel-cache
+.cache
+.cache/
+.next/
+.nuxt/
+.vuepress/dist/
+.fusebox/
+.serverless/
+.dynamodb/
+.grunt/
+lib-cov/
+.lock-wscript
+.tern-port
+.node_repl_history
+*.tgz
+.yarn-integrity
+
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+############################################################
+# VARIABLES DE ENTORNO / SECRETOS
+############################################################
+
+.env
+.env.*
+!.env.example
+!.env.template
+
+public/env.js
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.local.json
+secrets.json
+
+*.pfx
+*.snk
+
+############################################################
+# .NET / C#
+############################################################
+
+[Bb]in/
+[Oo]bj/
+TestResults/
+artifacts/
+
+*.rsuser
+*.user
+*.cache
+*.nupkg
+*.snupkg
+
+# Archivos generados por publish / profiling / cobertura
+publish/
+Publish/
+BenchmarkDotNet.Artifacts/
+coverage.cobertura.xml
+coverage.opencover.xml
+*.coverage
+*.coveragexml
+*.trx
+packages/
+
+############################################################
+# ENTITY FRAMEWORK / MIGRACIONES GENERADAS TEMPORALES
+############################################################
+
+# Descomentar solo si generás scripts ef temporales fuera del proyecto
+# efbundle
+# *.sql.tmp
+
+############################################################
+# DOCKER
+############################################################
+
+docker-data/
+docker-volumes/
+*.tar
+
+############################################################
+# SQL SERVER / BASES LOCALES / HERRAMIENTAS
+############################################################
+
+*.mdf
+*.ldf
+*.ndf
+*.bak
+
+############################################################
+# AZURE DEVOPS / PIPELINES / OUTPUTS
+############################################################
+
+.azure/
+*.publishsettings
+
+############################################################
+# TESTING
+############################################################
+
+coverage/
+coverage-final.json
+test-results/
+playwright-report/
+
+############################################################
+# HERRAMIENTAS AI / AGENTES
+############################################################
+
+.agent
+CLAUDE.md
+.claude/
+
+############################################################
+# MISC
+############################################################
+
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+############################################################
+# CERTIFICADOS Y TOKENS ARCA
+############################################################
+
+Certificado/
+tokens/

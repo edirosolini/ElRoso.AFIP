@@ -1,0 +1,19 @@
+{
+  "ExtendedData": {
+    "inputs": [
+      "https://wswhomo.afip.gov.ar/wsfev1/service.asmx?WSDL"
+    ],
+    "collectionTypes": [
+      "System.Array",
+      "System.Collections.Generic.Dictionary`2"
+    ],
+    "internalTypeAccess": true,
+    "messageContract": true,
+    "namespaceMappings": [
+      "*, WSFEv1"
+    ],
+    "sync": true,
+    "targetFramework": "net8.0",
+    "typeReuseMode": "None"
+  }
+}

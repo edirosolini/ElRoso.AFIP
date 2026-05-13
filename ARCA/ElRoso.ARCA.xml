@@ -1,0 +1,1450 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>ElRoso.ARCA</name>
+    </assembly>
+    <members>
+        <member name="T:ElRoso.ARCA.Caching.FileTokenCache">
+            <summary>
+            File-based token cache. One encrypted binary file per service+company combination.
+            Uses per-key SemaphoreSlim to prevent concurrent read/write corruption.
+            Caché de tokens basada en archivos cifrados. Un archivo por combinación servicio+empresa.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Caching.FileTokenCache.SerializeToken(ElRoso.ARCA.Domains.Responses.LoginTicketResponse)">
+            <summary>
+            Serializes and encrypts a token for disk storage.
+            On Windows uses DPAPI (CurrentUser scope) — on other platforms writes plain JSON.
+            Serializa y cifra un token para almacenamiento en disco.
+            En Windows usa DPAPI (scope CurrentUser) — en otras plataformas escribe JSON plano.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Caching.FileTokenCache.DeserializeToken(System.Byte[])">
+            <summary>
+            Decrypts and deserializes a token from disk.
+            Descifra y deserializa un token desde disco.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Caching.ITokenCache">
+            <summary>
+            Abstraction for storing and retrieving WSAA login tickets.
+            Abstracción para almacenar y recuperar tokens del WSAA.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Caching.ITokenCache.GetAsync(System.String,System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Returns a valid (non-expired) ticket, or null if cache miss / expired.
+            Retorna un ticket válido (no expirado), o null si no existe o expiró.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Caching.ITokenCache.SetAsync(System.String,System.Int64,ElRoso.ARCA.Domains.Responses.LoginTicketResponse,System.Threading.CancellationToken)">
+            <summary>
+            Persists a new ticket. Overwrites any existing entry for the same service+company.
+            Guarda un nuevo ticket. Sobreescribe cualquier entrada existente para el mismo servicio+empresa.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.DependencyInjection.ARCAServiceCollectionExtensions.AddARCAClient(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{ElRoso.ARCA.Options.ARCAOptions})">
+            <summary>
+            Registers all ARCA (ex-AFIP) services into the DI container.
+            Registra todos los servicios de ARCA (ex-AFIP) en el contenedor de DI.
+            </summary>
+            <example>
+            builder.Services.AddARCAClient(options =>
+            {
+                options.IsProduction        = false;
+                options.CertificatePath     = "/certs/empresa.pfx";
+                options.CertificatePassword = "miPassword";
+                options.TokenCacheDirectory = "/tmp/ARCA-tokens";
+            });
+            </example>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.FA">
+            <summary>Factura A.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.NDA">
+            <summary>Nota de Débito A.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.NCA">
+            <summary>Nota de Crédito A.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.FB">
+            <summary>Factura B.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.NDB">
+            <summary>Nota de Débito B.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.NCB">
+            <summary>Nota de Crédito B.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.FC">
+            <summary>Factura C.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.NDC">
+            <summary>Nota de Débito C.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.NCC">
+            <summary>Nota de Crédito C.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.InvoiceExport">
+            <summary>Factura de Exportación.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.DebitNoteExport">
+            <summary>Nota de Débito por Operaciones con el Exterior.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.CreditNoteExport">
+            <summary>Nota de Crédito por Operaciones con el Exterior.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.Remittances">
+            <summary>Remito R.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.ConceptTypeARCAEnum.Products">
+            <summary>Productos.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.ConceptTypeARCAEnum.Services">
+            <summary>Servicios.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.ConceptTypeARCAEnum.Otros">
+            <summary>Otros (productos y servicios).</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.DocumentTypeARCAEnum.CUIT">
+            <summary>C.U.I.T. — Clave Única de Identificación Tributaria.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.DocumentTypeARCAEnum.DNI">
+            <summary>D.N.I. — Documento Nacional de Identidad.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.DocumentTypeARCAEnum.SIN_IDENTIFICAR">
+            <summary>Sin identificar (consumidor final sin documento).</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.VATConditionARCAEnum.CONSUMIDOR_FINAL">
+            <summary>Consumidor final — sin responsabilidad de IVA.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.VATConditionARCAEnum.MONOTRIBUTO">
+            <summary>Monotributista.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.VATConditionARCAEnum.RESPONSABLE_INSCRIPTO">
+            <summary>Responsable Inscripto en IVA.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Requests.BillingDocumentNumberingRequest.Version">
+            <summary>QR code schema version. / Versión del esquema del QR.</summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Domains.Requests.LoginTicketRequest">
+            <summary>
+            Internal WSAA request state. Not part of the public API.
+            Estado interno del request al WSAA. No es parte de la API pública.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Responses.BillingDocumentNumberingResponse.Errors">
+            <summary>
+            Business errors returned by ARCA (observaciones, códigos de error).
+            Errores de negocio devueltos por ARCA.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Domains.Responses.BillingDocumentNumberingResponse.QRCode">
+            <summary>
+            Generates the ARCA QR code URL for printing on the invoice.
+            Genera la URL del código QR de ARCA para imprimir en el comprobante.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Domains.Services.IBillingDocumentNumberingService">
+            <summary>
+            Requests a CAE (Electronic Authorization Code) from ARCA for a billing document.
+            Solicita un CAE (Código de Autorización Electrónico) a ARCA para un comprobante.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Domains.Services.IBillingDocumentNumberingService.AuthorizeAsync(ElRoso.ARCA.Domains.Requests.BillingDocumentNumberingRequest,System.Threading.CancellationToken)">
+            <summary>
+            Validates the request and obtains a CAE from ARCA.
+            Valida el request y obtiene un CAE de ARCA.
+            </summary>
+            <param name="request">Billing document to authorize.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>Response with CAE and document number, or error list.</returns>
+        </member>
+        <member name="T:ElRoso.ARCA.Domains.Services.ICertificateService">
+            <summary>
+            Handles X.509 certificate loading and PKCS#7 message signing.
+            Maneja la carga de certificados X.509 y la firma PKCS#7 de mensajes.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Domains.Services.ICertificateService.SignMessage(System.Byte[],System.Security.Cryptography.X509Certificates.X509Certificate2)">
+            <summary>
+            Signs a byte array with the given certificate (PKCS#7 / CMS).
+            Firma un array de bytes con el certificado dado (PKCS#7 / CMS).
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Domains.Services.ICertificateService.LoadCertificate(System.String,System.String)">
+            <summary>
+            Loads an X.509 certificate (with private key) from a .pfx/.p12 file.
+            Carga un certificado X.509 (con clave privada) desde un archivo .pfx/.p12.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Domains.Services.ILoginTicketService">
+            <summary>
+            Obtains a Login Ticket (token + sign) from the ARCA WSAA service.
+            Obtiene un Login Ticket (token + sign) del servicio WSAA de ARCA.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Domains.Services.ILoginTicketService.GetLoginTicketAsync(System.String,System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Authenticates against WSAA and returns a signed login ticket.
+            Autentica contra el WSAA y retorna un ticket de sesión firmado.
+            </summary>
+            <param name="service">Target ARCA service name (e.g. "wsfe", "wsfex").</param>
+            <param name="wsaaUrl">WSAA endpoint URL.</param>
+            <param name="certificatePath">Absolute path to the signing .pfx/.p12 certificate.</param>
+            <param name="certificatePassword">Certificate password, or null if none.</param>
+            <param name="ct">Cancellation token.</param>
+        </member>
+        <member name="T:ElRoso.ARCA.Exceptions.ARCAAuthException">
+            <summary>
+            Thrown when WSAA authentication fails (certificate, signing, or token retrieval).
+            Se lanza cuando falla la autenticación contra el WSAA.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Exceptions.ARCAServiceException">
+            <summary>
+            Thrown when ARCA web services (WSFEv1, WSFEXv1, Padron) return an error code.
+            Se lanza cuando los web services de ARCA devuelven un código de error.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Exceptions.ARCAValidationException">
+            <summary>
+            Thrown when the billing document request fails local FluentValidation rules.
+            Se lanza cuando el request no pasa las validaciones locales.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Options.ARCAOptions">
+            <summary>
+            Configuration options for the ARCA (ex-AFIP) client library.
+            Opciones de configuración para la librería cliente de ARCA (ex-AFIP).
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Options.ARCAOptions.IsProduction">
+            <summary>
+            Use production endpoints. Default: false (homologation/testing).
+            Usar endpoints de producción. Por defecto: false (homologación).
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Options.ARCAOptions.CertificatePath">
+            <summary>
+            Absolute path to the X.509 certificate file (.pfx or .p12).
+            Ruta absoluta al archivo de certificado X.509 (.pfx o .p12).
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Options.ARCAOptions.CertificatePassword">
+            <summary>
+            Certificate password. Null if the certificate has no password.
+            Contraseña del certificado. Null si no tiene contraseña.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Options.ARCAOptions.TokenCacheDirectory">
+            <summary>
+            Directory where login ticket cache files are stored.
+            Defaults to the system temp folder.
+            Directorio donde se almacenan los archivos de caché de tokens.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Options.ARCAOptions.SoapTimeoutSeconds">
+            <summary>
+            SOAP timeout in seconds. Default: 30.
+            Timeout de las llamadas SOAP en segundos.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Services.LoginTicketService.GetNetworkTimeAsync(System.Threading.CancellationToken)">
+            <summary>
+            Fetches current time from ARCA's NTP server, cached for 60 s.
+            Falls back to system clock if NTP is unreachable — WSAA tolerates ±10 min.
+            Obtiene la hora del servidor NTP de ARCA, cacheada por 60 s.
+            Usa el reloj del sistema como fallback — WSAA tolera ±10 min de desvío.
+            </summary>
+        </member>
+        <member name="T:Padron.SRValidationException">
+            <remarks/>
+        </member>
+        <member name="T:Padron.metadata">
+            <remarks/>
+        </member>
+        <member name="P:Padron.metadata.fechaHora">
+            <remarks/>
+        </member>
+        <member name="P:Padron.metadata.fechaHoraSpecified">
+            <remarks/>
+        </member>
+        <member name="P:Padron.metadata.servidor">
+            <remarks/>
+        </member>
+        <member name="T:Padron.errorRegimenGeneral">
+            <remarks/>
+        </member>
+        <member name="P:Padron.errorRegimenGeneral.error">
+            <remarks/>
+        </member>
+        <member name="P:Padron.errorRegimenGeneral.mensaje">
+            <remarks/>
+        </member>
+        <member name="T:Padron.errorMonotributo">
+            <remarks/>
+        </member>
+        <member name="P:Padron.errorMonotributo.error">
+            <remarks/>
+        </member>
+        <member name="P:Padron.errorMonotributo.mensaje">
+            <remarks/>
+        </member>
+        <member name="T:Padron.errorConstancia">
+            <remarks/>
+        </member>
+        <member name="P:Padron.errorConstancia.apellido">
+            <remarks/>
+        </member>
+        <member name="P:Padron.errorConstancia.error">
+            <remarks/>
+        </member>
+        <member name="P:Padron.errorConstancia.idPersona">
+            <remarks/>
+        </member>
+        <member name="P:Padron.errorConstancia.idPersonaSpecified">
+            <remarks/>
+        </member>
+        <member name="P:Padron.errorConstancia.nombre">
+            <remarks/>
+        </member>
+        <member name="T:Padron.regimen">
+            <remarks/>
+        </member>
+        <member name="P:Padron.regimen.descripcionRegimen">
+            <remarks/>
+        </member>
+        <member name="P:Padron.regimen.idImpuesto">
+            <remarks/>
+        </member>
+        <member name="P:Padron.regimen.idImpuestoSpecified">
+            <remarks/>
+        </member>
+        <member name="P:Padron.regimen.idRegimen">
+            <remarks/>
+        </member>
+        <member name="P:Padron.regimen.idRegimenSpecified">
+            <remarks/>
+        </member>
+        <member name="P:Padron.regimen.periodo">
+            <remarks/>
+        </member>
+        <member name="P:Padron.regimen.periodoSpecified">
+            <remarks/>
+        </member>
+        <member name="P:Padron.regimen.tipoRegimen">
+            <remarks/>
+        </member>
+        <member name="T:Padron.datosRegimenGeneral">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosRegimenGeneral.actividad">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosRegimenGeneral.categoriaAutonomo">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosRegimenGeneral.impuesto">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosRegimenGeneral.regimen">
+            <remarks/>
+        </member>
+        <member name="T:Padron.actividad">
+            <remarks/>
+        </member>
+        <member name="P:Padron.actividad.descripcionActividad">
+            <remarks/>
+        </member>
+        <member name="P:Padron.actividad.idActividad">
+            <remarks/>
+        </member>
+        <member name="P:Padron.actividad.idActividadSpecified">
+            <remarks/>
+        </member>
+        <member name="P:Padron.actividad.nomenclador">
+            <remarks/>
+        </member>
+        <member name="P:Padron.actividad.nomencladorSpecified">
+            <remarks/>
+        </member>
+        <member name="P:Padron.actividad.orden">
+            <remarks/>
+        </member>
+        <member name="P:Padron.actividad.ordenSpecified">
+            <remarks/>
+        </member>
+        <member name="P:Padron.actividad.periodo">
+            <remarks/>
+        </member>
+        <member name="P:Padron.actividad.periodoSpecified">
+            <remarks/>
+        </member>
+        <member name="T:Padron.categoria">
+            <remarks/>
+        </member>
+        <member name="P:Padron.categoria.descripcionCategoria">
+            <remarks/>
+        </member>
+        <member name="P:Padron.categoria.idCategoria">
+            <remarks/>
+        </member>
+        <member name="P:Padron.categoria.idCategoriaSpecified">
+            <remarks/>
+        </member>
+        <member name="P:Padron.categoria.idImpuesto">
+            <remarks/>
+        </member>
+        <member name="P:Padron.categoria.idImpuestoSpecified">
+            <remarks/>
+        </member>
+        <member name="P:Padron.categoria.periodo">
+            <remarks/>
+        </member>
+        <member name="P:Padron.categoria.periodoSpecified">
+            <remarks/>
+        </member>
+        <member name="T:Padron.impuesto">
+            <remarks/>
+        </member>
+        <member name="P:Padron.impuesto.descripcionImpuesto">
+            <remarks/>
+        </member>
+        <member name="P:Padron.impuesto.idImpuesto">
+            <remarks/>
+        </member>
+        <member name="P:Padron.impuesto.idImpuestoSpecified">
+            <remarks/>
+        </member>
+        <member name="P:Padron.impuesto.periodo">
+            <remarks/>
+        </member>
+        <member name="P:Padron.impuesto.periodoSpecified">
+            <remarks/>
+        </member>
+        <member name="T:Padron.relacion">
+            <remarks/>
+        </member>
+        <member name="P:Padron.relacion.apellidoPersonaAsociada">
+            <remarks/>
+        </member>
+        <member name="P:Padron.relacion.ffRelacion">
+            <remarks/>
+        </member>
+        <member name="P:Padron.relacion.ffRelacionSpecified">
+            <remarks/>
+        </member>
+        <member name="P:Padron.relacion.ffVencimiento">
+            <remarks/>
+        </member>
+        <member name="P:Padron.relacion.ffVencimientoSpecified">
+            <remarks/>
+        </member>
+        <member name="P:Padron.relacion.idPersonaAsociada">
+            <remarks/>
+        </member>
+        <member name="P:Padron.relacion.idPersonaAsociadaSpecified">
+            <remarks/>
+        </member>
+        <member name="P:Padron.relacion.nombrePersonaAsociada">
+            <remarks/>
+        </member>
+        <member name="P:Padron.relacion.razonSocialPersonaAsociada">
+            <remarks/>
+        </member>
+        <member name="P:Padron.relacion.tipoComponente">
+            <remarks/>
+        </member>
+        <member name="T:Padron.datosMonotributo">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosMonotributo.actividad">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosMonotributo.actividadMonotributista">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosMonotributo.categoriaMonotributo">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosMonotributo.componenteDeSociedad">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosMonotributo.impuesto">
+            <remarks/>
+        </member>
+        <member name="T:Padron.domicilio">
+            <remarks/>
+        </member>
+        <member name="P:Padron.domicilio.codPostal">
+            <remarks/>
+        </member>
+        <member name="P:Padron.domicilio.datoAdicional">
+            <remarks/>
+        </member>
+        <member name="P:Padron.domicilio.descripcionProvincia">
+            <remarks/>
+        </member>
+        <member name="P:Padron.domicilio.direccion">
+            <remarks/>
+        </member>
+        <member name="P:Padron.domicilio.idProvincia">
+            <remarks/>
+        </member>
+        <member name="P:Padron.domicilio.idProvinciaSpecified">
+            <remarks/>
+        </member>
+        <member name="P:Padron.domicilio.localidad">
+            <remarks/>
+        </member>
+        <member name="P:Padron.domicilio.tipoDatoAdicional">
+            <remarks/>
+        </member>
+        <member name="P:Padron.domicilio.tipoDomicilio">
+            <remarks/>
+        </member>
+        <member name="T:Padron.dependencia">
+            <remarks/>
+        </member>
+        <member name="P:Padron.dependencia.codPostal">
+            <remarks/>
+        </member>
+        <member name="P:Padron.dependencia.descripcionDependencia">
+            <remarks/>
+        </member>
+        <member name="P:Padron.dependencia.descripcionProvincia">
+            <remarks/>
+        </member>
+        <member name="P:Padron.dependencia.direccion">
+            <remarks/>
+        </member>
+        <member name="P:Padron.dependencia.idDependencia">
+            <remarks/>
+        </member>
+        <member name="P:Padron.dependencia.idDependenciaSpecified">
+            <remarks/>
+        </member>
+        <member name="P:Padron.dependencia.idProvincia">
+            <remarks/>
+        </member>
+        <member name="P:Padron.dependencia.idProvinciaSpecified">
+            <remarks/>
+        </member>
+        <member name="P:Padron.dependencia.localidad">
+            <remarks/>
+        </member>
+        <member name="T:Padron.caracterizacion">
+            <remarks/>
+        </member>
+        <member name="P:Padron.caracterizacion.descripcionCaracterizacion">
+            <remarks/>
+        </member>
+        <member name="P:Padron.caracterizacion.idCaracterizacion">
+            <remarks/>
+        </member>
+        <member name="P:Padron.caracterizacion.idCaracterizacionSpecified">
+            <remarks/>
+        </member>
+        <member name="P:Padron.caracterizacion.periodo">
+            <remarks/>
+        </member>
+        <member name="P:Padron.caracterizacion.periodoSpecified">
+            <remarks/>
+        </member>
+        <member name="T:Padron.datosGenerales">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosGenerales.apellido">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosGenerales.caracterizacion">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosGenerales.dependencia">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosGenerales.domicilioFiscal">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosGenerales.esSucesion">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosGenerales.estadoClave">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosGenerales.fechaContratoSocial">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosGenerales.fechaContratoSocialSpecified">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosGenerales.fechaFallecimiento">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosGenerales.fechaFallecimientoSpecified">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosGenerales.idPersona">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosGenerales.idPersonaSpecified">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosGenerales.mesCierre">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosGenerales.mesCierreSpecified">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosGenerales.nombre">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosGenerales.razonSocial">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosGenerales.tipoClave">
+            <remarks/>
+        </member>
+        <member name="P:Padron.datosGenerales.tipoPersona">
+            <remarks/>
+        </member>
+        <member name="T:Padron.personaReturn">
+            <remarks/>
+        </member>
+        <member name="P:Padron.personaReturn.datosGenerales">
+            <remarks/>
+        </member>
+        <member name="P:Padron.personaReturn.datosMonotributo">
+            <remarks/>
+        </member>
+        <member name="P:Padron.personaReturn.datosRegimenGeneral">
+            <remarks/>
+        </member>
+        <member name="P:Padron.personaReturn.errorConstancia">
+            <remarks/>
+        </member>
+        <member name="P:Padron.personaReturn.errorMonotributo">
+            <remarks/>
+        </member>
+        <member name="P:Padron.personaReturn.errorRegimenGeneral">
+            <remarks/>
+        </member>
+        <member name="P:Padron.personaReturn.metadata">
+            <remarks/>
+        </member>
+        <member name="T:Padron.personaListReturn">
+            <remarks/>
+        </member>
+        <member name="P:Padron.personaListReturn.metadata">
+            <remarks/>
+        </member>
+        <member name="P:Padron.personaListReturn.persona">
+            <remarks/>
+        </member>
+        <member name="T:Padron.persona">
+            <remarks/>
+        </member>
+        <member name="P:Padron.persona.datosGenerales">
+            <remarks/>
+        </member>
+        <member name="P:Padron.persona.datosMonotributo">
+            <remarks/>
+        </member>
+        <member name="P:Padron.persona.datosRegimenGeneral">
+            <remarks/>
+        </member>
+        <member name="P:Padron.persona.errorConstancia">
+            <remarks/>
+        </member>
+        <member name="P:Padron.persona.errorMonotributo">
+            <remarks/>
+        </member>
+        <member name="P:Padron.persona.errorRegimenGeneral">
+            <remarks/>
+        </member>
+        <member name="T:Padron.dummyReturn">
+            <remarks/>
+        </member>
+        <member name="P:Padron.dummyReturn.appserver">
+            <remarks/>
+        </member>
+        <member name="P:Padron.dummyReturn.authserver">
+            <remarks/>
+        </member>
+        <member name="P:Padron.dummyReturn.dbserver">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEXAuthRequest">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXAuthRequest.Token">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXAuthRequest.Sign">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXAuthRequest.Cuit">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEXResponse_ActividadTipo">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_ActividadTipo.Id">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_ActividadTipo.Orden">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_ActividadTipo.Desc">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.FEXResponse_Actividades">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Actividades.FEXResultGet">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Actividades.FEXErr">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Actividades.FEXEvents">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEXErr">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXErr.ErrCode">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXErr.ErrMsg">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEXEvents">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXEvents.EventCode">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXEvents.EventMsg">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEXResponse_Opc">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Opc.Opc_Id">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Opc.Opc_Ds">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Opc.Opc_vig_desde">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Opc.Opc_vig_hasta">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.FEXResponse_Opc">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Opc.FEXResultGet">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Opc.FEXErr">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Opc.FEXEvents">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEXResponse_CheckPermiso">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_CheckPermiso.Status">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.FEXResponse_CheckPermiso">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_CheckPermiso.FEXResultGet">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_CheckPermiso.FEXErr">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_CheckPermiso.FEXEvents">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEXResponse_PtoVenta">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_PtoVenta.Pve_Nro">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_PtoVenta.Pve_Bloqueado">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_PtoVenta.Pve_FchBaja">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.FEXResponse_PtoVenta">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_PtoVenta.FEXResultGet">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_PtoVenta.FEXErr">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_PtoVenta.FEXEvents">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEXResponse_LastID">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_LastID.Id">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.FEXResponse_LastID">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_LastID.FEXResultGet">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_LastID.FEXErr">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_LastID.FEXEvents">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEXResponse_Ctz">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Ctz.Mon_ctz">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Ctz.Mon_fecha">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.FEXResponse_Ctz">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Ctz.FEXResultGet">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Ctz.FEXErr">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Ctz.FEXEvents">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.DummyResponse">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.DummyResponse.AppServer">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.DummyResponse.DbServer">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.DummyResponse.AuthServer">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEX_LastCMP_Response">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEX_LastCMP_Response.Cbte_nro">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEX_LastCMP_Response.Cbte_fecha">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.FEXResponseLast_CMP">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponseLast_CMP.FEXResult_LastCMP">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponseLast_CMP.FEXErr">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponseLast_CMP.FEXEvents">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEX_LastCMP">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEX_LastCMP.Token">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEX_LastCMP.Sign">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEX_LastCMP.Cuit">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEX_LastCMP.Pto_venta">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEX_LastCMP.Cbte_Tipo">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEXResponse_Mon_CON_Cotizacion">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Mon_CON_Cotizacion.Mon_Id">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Mon_CON_Cotizacion.Mon_Ds">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Mon_CON_Cotizacion.Mon_ctz">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Mon_CON_Cotizacion.Fecha_ctz">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.FEXResponse_Mon_CON_COTIZACION">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Mon_CON_COTIZACION.FEXResultGet">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Mon_CON_COTIZACION.FEXErr">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Mon_CON_COTIZACION.FEXEvents">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEXResponse_Mon">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Mon.Mon_Id">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Mon.Mon_Ds">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Mon.Mon_vig_desde">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Mon.Mon_vig_hasta">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.FEXResponse_Mon">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Mon.FEXResultGet">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Mon.FEXErr">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Mon.FEXEvents">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEXResponse_DST_cuit">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_DST_cuit.DST_CUIT">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_DST_cuit.DST_Ds">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.FEXResponse_DST_cuit">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_DST_cuit.FEXResultGet">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_DST_cuit.FEXErr">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_DST_cuit.FEXEvents">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEXResponse_DST_pais">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_DST_pais.DST_Codigo">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_DST_pais.DST_Ds">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.FEXResponse_DST_pais">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_DST_pais.FEXResultGet">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_DST_pais.FEXErr">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_DST_pais.FEXEvents">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEXResponse_UMed">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_UMed.Umed_Id">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_UMed.Umed_Ds">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_UMed.Umed_vig_desde">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_UMed.Umed_vig_hasta">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.FEXResponse_Umed">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Umed.FEXResultGet">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Umed.FEXErr">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Umed.FEXEvents">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEXResponse_Idi">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Idi.Idi_Id">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Idi.Idi_Ds">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Idi.Idi_vig_desde">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Idi.Idi_vig_hasta">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.FEXResponse_Idi">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Idi.FEXResultGet">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Idi.FEXErr">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Idi.FEXEvents">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEXResponse_Inc">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Inc.Inc_Id">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Inc.Inc_Ds">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Inc.Inc_vig_desde">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Inc.Inc_vig_hasta">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.FEXResponse_Inc">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Inc.FEXResultGet">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Inc.FEXErr">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Inc.FEXEvents">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEXResponse_Tex">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Tex.Tex_Id">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Tex.Tex_Ds">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Tex.Tex_vig_desde">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Tex.Tex_vig_hasta">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.FEXResponse_Tex">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Tex.FEXResultGet">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Tex.FEXErr">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Tex.FEXEvents">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEXResponse_Cbte_Tipo">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Cbte_Tipo.Cbte_Id">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Cbte_Tipo.Cbte_Ds">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Cbte_Tipo.Cbte_vig_desde">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXResponse_Cbte_Tipo.Cbte_vig_hasta">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.FEXResponse_Cbte_Tipo">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Cbte_Tipo.FEXResultGet">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Cbte_Tipo.FEXErr">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponse_Cbte_Tipo.FEXEvents">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEXGetCMPR">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Id">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Fecha_cbte">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Cbte_tipo">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Punto_vta">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Cbte_nro">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Tipo_expo">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Permiso_existente">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Permisos">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Dst_cmp">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Cliente">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Cuit_pais_cliente">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Domicilio_cliente">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Id_impositivo">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Moneda_Id">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Moneda_ctz">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.CanMisMonExt">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Obs_comerciales">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Imp_total">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Obs">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Cmps_asoc">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Forma_pago">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Incoterms">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Incoterms_Ds">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Idioma_cbte">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Items">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Fecha_cbte_cae">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Fch_venc_Cae">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Cae">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Resultado">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Motivos_Obs">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Opcionales">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Fecha_pago">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMPR.Actividades">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.Permiso">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.Permiso.Id_permiso">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.Permiso.Dst_merc">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.Cmp_asoc">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.Cmp_asoc.Cbte_tipo">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.Cmp_asoc.Cbte_punto_vta">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.Cmp_asoc.Cbte_nro">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.Cmp_asoc.Cbte_cuit">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.Item">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.Item.Pro_codigo">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.Item.Pro_ds">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.Item.Pro_qty">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.Item.Pro_umed">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.Item.Pro_precio_uni">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.Item.Pro_bonificacion">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.Item.Pro_total_item">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.Opcional">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.Opcional.Id">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.Opcional.Valor">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.Actividad">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.Actividad.Id">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.FEXGetCMPResponse">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXGetCMPResponse.FEXResultGet">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXGetCMPResponse.FEXErr">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXGetCMPResponse.FEXEvents">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEXGetCMP">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMP.Cbte_tipo">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMP.Punto_vta">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXGetCMP.Cbte_nro">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEXOutAuthorize">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXOutAuthorize.Id">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXOutAuthorize.Cuit">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXOutAuthorize.Cbte_tipo">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXOutAuthorize.Punto_vta">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXOutAuthorize.Cbte_nro">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXOutAuthorize.Cae">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXOutAuthorize.Fch_venc_Cae">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXOutAuthorize.Fch_cbte">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXOutAuthorize.Resultado">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXOutAuthorize.Reproceso">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXOutAuthorize.Motivos_Obs">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.FEXResponseAuthorize">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponseAuthorize.FEXResultAuth">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponseAuthorize.FEXErr">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.FEXResponseAuthorize.FEXEvents">
+            <remarks/>
+        </member>
+        <member name="T:WSFEXv1.ClsFEXRequest">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Id">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Fecha_cbte">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Cbte_Tipo">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Punto_vta">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Cbte_nro">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Tipo_expo">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Permiso_existente">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Permisos">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Dst_cmp">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Cliente">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Cuit_pais_cliente">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Domicilio_cliente">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Id_impositivo">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Moneda_Id">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Moneda_ctz">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Moneda_ctzSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.CanMisMonExt">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Obs_comerciales">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Imp_total">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Obs">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Cmps_asoc">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Forma_pago">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Incoterms">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Incoterms_Ds">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Idioma_cbte">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Items">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Opcionales">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Fecha_pago">
+            <remarks/>
+        </member>
+        <member name="P:WSFEXv1.ClsFEXRequest.Actividades">
+            <remarks/>
+        </member>
+    </members>
+</doc>

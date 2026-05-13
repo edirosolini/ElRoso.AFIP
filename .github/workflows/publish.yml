@@ -1,0 +1,38 @@
+name: ElRoso.ARCA.Build and Publish
+
+on:
+  push:
+    branches:
+      - mainline
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET Core SDK 9.x
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.x'
+
+    - name: Restore dependencies
+      run: dotnet restore ./ARCA/ElRoso.ARCA.csproj
+
+    - name: Set version
+      run: echo "VERSION=$(date +'%Y.%m.%d').${{ github.run_number }}" >> $GITHUB_ENV
+
+    - name: Build
+      run: dotnet build ./ARCA/ElRoso.ARCA.csproj --no-restore -c Release /p:Version=${{ env.VERSION }}
+
+    - name: Pack
+      run: dotnet pack ./ARCA/ElRoso.ARCA.csproj --no-restore --no-build -c Release /p:Version=${{ env.VERSION }} --output ./nupkg
+
+    - name: Publish to GitHub Packages
+      run: dotnet nuget push ./nupkg/*.nupkg --source https://nuget.pkg.github.com/edirosolini/index.json --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate

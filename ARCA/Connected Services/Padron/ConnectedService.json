@@ -1,0 +1,19 @@
+{
+  "ExtendedData": {
+    "inputs": [
+      "https://aws.afip.gov.ar/sr-padron/webservices/personaServiceA5?WSDL"
+    ],
+    "collectionTypes": [
+      "System.Array",
+      "System.Collections.Generic.Dictionary`2"
+    ],
+    "internalTypeAccess": true,
+    "messageContract": true,
+    "namespaceMappings": [
+      "*, Padron"
+    ],
+    "sync": true,
+    "targetFramework": "net8.0",
+    "typeReuseMode": "None"
+  }
+}

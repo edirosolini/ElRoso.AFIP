@@ -1,0 +1,63 @@
+############################################################
+# DEFAULT
+############################################################
+
+* text=auto
+
+############################################################
+# LF (Linux / Docker / CI/CD)
+############################################################
+
+*.sh text eol=lf
+*.bash text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+Dockerfile text eol=lf
+*.dockerfile text eol=lf
+
+############################################################
+# .NET / C#
+############################################################
+
+*.cs text eol=lf
+*.csproj text eol=lf
+*.sln text eol=lf
+*.props text eol=lf
+*.targets text eol=lf
+
+############################################################
+# WINDOWS (solo si realmente lo necesitás)
+############################################################
+
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+############################################################
+# BINARIOS
+############################################################
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar binary
+*.gz binary
+*.7z binary
+*.dll binary
+*.exe binary
+*.pdb binary
+*.woff binary
+*.woff2 binary

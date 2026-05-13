@@ -1,0 +1,19 @@
+{
+  "ExtendedData": {
+    "inputs": [
+      "https://wsaahomo.afip.gov.ar/ws/services/LoginCms?WSDL"
+    ],
+    "collectionTypes": [
+      "System.Array",
+      "System.Collections.Generic.Dictionary`2"
+    ],
+    "internalTypeAccess": true,
+    "messageContract": true,
+    "namespaceMappings": [
+      "*, WSAA"
+    ],
+    "sync": true,
+    "targetFramework": "net8.0",
+    "typeReuseMode": "None"
+  }
+}
