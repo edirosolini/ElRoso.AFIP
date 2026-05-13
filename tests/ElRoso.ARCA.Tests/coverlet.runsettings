@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura,opencover</Format>
+
+          <!-- Include only ElRoso.ARCA assembly; exclude test assemblies. -->
+          <Include>[ElRoso.ARCA]*</Include>
+          <Exclude>[ElRoso.ARCA.Tests]*,[xunit.*]*</Exclude>
+
+          <!-- Skip auto-generated SOAP proxies (Connected Services) and trivial DTOs. -->
+          <ExcludeByFile>**/Connected Services/**/Reference.cs,**/obj/**/*.cs</ExcludeByFile>
+
+          <!-- Skip compiler-generated and StyleCop-marked types. -->
+          <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
+
+          <SingleHit>false</SingleHit>
+          <UseSourceLink>true</UseSourceLink>
+          <IncludeTestAssembly>false</IncludeTestAssembly>
+          <SkipAutoProps>true</SkipAutoProps>
+          <DeterministicReport>true</DeterministicReport>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
