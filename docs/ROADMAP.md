@@ -1,32 +1,35 @@
 # Roadmap
 
-> 📌 Este documento lista features futuros de `ElRoso.ARCA`. **Para reportar bugs o sugerir un feature concreto**, abrí un [Issue](https://github.com/edirosolini/edirosolini/ElRoso.ARCA/issues/new/choose) o una [Discussion](https://github.com/edirosolini/ElRoso.ARCA/discussions).
+> 📌 Este documento lista features futuros y pendientes de `ElRoso.ARCA`. **Para reportar bugs o sugerir un feature concreto**, abrí un [Issue](https://github.com/edirosolini/ElRoso.ARCA/issues/new/choose) o una [Discussion](https://github.com/edirosolini/ElRoso.ARCA/discussions).
 
 ---
 
-## Próximo release: `v1.1.0` — Read-side de ARCA
+## ✅ Ya entregado
 
-El salto importante de la lib. La `v1.0.x` cubre emisión (bien documentado por la comunidad). La `v1.1.0` apunta a lo que **nadie resuelve bien en .NET hoy**: lectura desde ARCA.
-
-### Features confirmados (en desarrollo)
-
-| Feature | WS | Estado |
-|---------|----|----|
-| **Validación de comprobantes recibidos** | `WSCDC` (Constatación) | 🔨 En desarrollo |
-| **Notificaciones DFE / e-Ventanilla** | `WSCComu` | 📋 Pendiente |
-
-### Bloqueado por falta de WS oficial
-
-| Feature | Razón |
-|---------|-------|
-| **Mis Comprobantes Recibidos (listado)** | ARCA no expone WS oficial (SOAP ni REST) para **listar** compras de un CUIT. Las soluciones comerciales hoy scrapean el portal — fuera del scope de esta lib. Si aparece WS oficial, reactivar |
-| **Libro IVA Digital (presentación)** | Hoy solo se opera vía portal. Si ARCA expone WS para presentación automática, sumarlo |
+| Versión | Highlights |
+|---------|------------|
+| **v1.0.0** | WSAA + WSFEv1 + WSFEXv1 + Padrón A5 — emisión completa |
+| **v1.1.0** | Read-side: WSCDC (validación) + WSCComu (e-Ventanilla / DFE) |
+| **v2.0.0** | Refactor modular: sub-namespaces `Core` / `Billing` / `Read` |
 
 ---
 
-## `v1.2.0` — Antifraude + sincronización
+## 🎯 Próximo: `v2.1.0` — Coverage + polish
 
-Backlog post-v1.1.0, priorizado por valor a PyMEs y devs.
+Sin features nuevos. Foco en pulir la lib post-refactor antes de seguir agregando WSs.
+
+| Item | Detalle | Estimación |
+|------|---------|------------|
+| Subir cobertura a 75%+ | Cubrir los SOAP-touching paths con mocks de los proxies WCF (no se mockean fácil, requiere `IServiceSoap` factory). El gap está en `LoginTicketService` (~94 LoC), `WsfeOperations.SolicitarCaeAsync` (~84 LoC), `ElectronicMailboxOperations.ListAsync/ConsumeAsync` (~120 LoC) | 12 – 20 hs |
+| Limpiar warnings StyleCop preexistentes (`SA1101`, etc.) | Heredado del código pre-refactor. ~400 warnings que no fallan el build pero ensucian el output | 4 – 6 hs |
+| Renamespacing de Connected Services (WSAA, WSFEv1, WSFEXv1, Padron, WSCDC, WSCComu) | Hoy quedaron con namespace plano (ej. `WSCDC.ServiceSoapClient`). Re-generar con `--namespace "*,ElRoso.ARCA.Core.Wsaa"` etc. | 3 – 5 hs |
+| **Confirmar URL de producción de WSCComu** | Hoy solo tenemos la de homologación (`stable-middleware-tecno-ext.afip.gob.ar`). Pedir a `webservices-desa@arca.gob.ar` cuando un usuario lo necesite | 0 hs (gestión externa) |
+| Codecov badge en color verde | Una vez arriba de 75%, el badge pasa de amarillo a verde | 0 hs (automático con la cobertura) |
+| **Total `v2.1.0`** | | **19 – 31 hs** |
+
+---
+
+## `v2.2.0` — Antifraude + sincronización
 
 | Feature | WS | Por qué |
 |---------|----|---------|
@@ -38,7 +41,7 @@ Estimación: 25 – 40 hs total.
 
 ---
 
-## `v1.3.0` y siguientes — Por demanda comunitaria
+## `v2.3.0` y siguientes — Por demanda comunitaria
 
 Implementación según pedido vía Issues / Discussions:
 
@@ -53,20 +56,49 @@ Implementación según pedido vía Issues / Discussions:
 
 ---
 
-## `v2.0.0` (futuro lejano, breaking)
+## 🔴 Bloqueado por falta de WS oficial
 
-- Refactor a sub-namespaces (`ElRoso.ARCA.Core.*`, `ElRoso.ARCA.Billing.*`, `ElRoso.ARCA.Read.*`) — limpia API pública con la cantidad de features acumulada.
-- Considerar extraer paquete `ElRoso.ARCA.Pro` (privado) con features avanzados — modelo Open Core.
+Estos features tienen demanda pero ARCA no expone API SOAP/REST oficial. Si aparece, se reactivan.
+
+| Feature | Razón del bloqueo |
+|---------|-------------------|
+| **Mis Comprobantes Recibidos (listado completo)** | ARCA no expone WS para **listar** compras de un CUIT. Las soluciones comerciales (AfipSDK, TusFacturasApp) scrapean el portal — fuera del scope de esta lib (rompería la filosofía "SOAP oficial only"). El WSCDC actual valida UN comprobante a la vez |
+| **Libro IVA Digital — presentación automática** | RG 4597. Hoy solo se opera vía portal manualmente. Si ARCA expone WS para presentación, sumarlo |
+| **Consulta de notificaciones de Cuentas Tributarias** | Sin WS oficial conocido |
+
+Si encontrás un WS oficial que cubra alguno de estos, **abrí un [Issue](https://github.com/edirosolini/ElRoso.ARCA/issues/new/choose)** con la URL del WSDL y los reactivamos.
 
 ---
 
-## Servicios ARCA que **NO** se implementarán
+## `v3.0.0` (futuro lejano, posible breaking)
+
+- **Paquete `ElRoso.ARCA.Pro` privado** — modelo Open Core: features avanzados pagos (ej. integración con padrones IIBB provinciales — ARBA, AGIP, etc., que no son ARCA pero son la misma audiencia).
+- **Soporte multi-cert por proceso** — hoy el cert se setea en `ARCAOptions` global. Para SaaS multi-tenant donde cada empresa tiene su cert, refactorear `ICertificateService` para resolverlo por contexto.
+- **Renombre interno de Connected Services** — `WSCDC` → `ElRoso.ARCA.Read.Wscdc.Soap`, etc. (cosmetic).
+
+---
+
+## ❌ Servicios ARCA que NO se implementarán
 
 Por estar fuera del scope (sector específico, aduanas, beneficios sectoriales):
 
 `WSLPG`, `WSLSP`, `WSLCA`, `WSLTV`, `WSLUM`, `WSREMHARINA`, `WSREMAZUCAR`, `WSREMCARNE`, `WSBFE`, `WSCTA`, `WSCREATEVEP`, `WSSEG`, `WSCPE`, `WSCES`, `WSSV`, `WdiaUtiDEs`, `WGESINV`, `wgestabref`, `wConsDepFiel`, `wgestiendaslibres`, `DigDepFiel`, `WutiGOPDeclaraciones`, `wdepmovimientos`, `wEnysa`, `sud_restricciones`, `sud_contrataciones`, `wscec`, `JAZA`, `Régimen Percepción IVA`, `WSPresentaciondeDDJJ`, `AGR`, `WSTABACO`, `WSICDB`.
 
 Si tu caso de uso requiere alguno de estos, **abrí una [Discussion](https://github.com/edirosolini/ElRoso.ARCA/discussions/new?category=ideas)** explicando el contexto. Lo revaluamos.
+
+---
+
+## 🛠 Deuda técnica conocida
+
+- **400+ warnings de StyleCop** (`SA1101`, `SA1503`, `SA1407`) heredados. No fallan el build (`<TreatWarningsAsErrors>false</TreatWarningsAsErrors>`) pero ensucian el output.
+- **`tests` con duplicate `using` warnings (CS0105)** post-refactor v2.0.0. El bulk replace generó múltiples `using` por archivo y el dedup no fue 100% perfecto.
+- **`FileTokenCacheTests.Dispose()` warning CA1816** — agregar `GC.SuppressFinalize(this)`.
+- **`InvoiceVerificationOperations` constructor sin tests directos** — cubierto indirectamente por `OperationsMappingTests` pero no por test específico de la clase.
+- **Connected Services regenerables** — documentar en CLAUDE.md del repo cómo regenerar cada uno con `dotnet-svcutil`. Comandos:
+  ```bash
+  dotnet dotnet-svcutil "https://wswhomo.afip.gov.ar/wsfev1/service.asmx?WSDL" --outputDir "ARCA/Billing/Connected Services/WSFEv1" --outputFile "Reference.cs" --namespace "*,WSFEv1" --targetFramework "net9.0" --internal
+  dotnet dotnet-svcutil "https://wswhomo.afip.gov.ar/WSCDC/service.asmx?WSDL" --outputDir "ARCA/Read/Connected Services/WSCDC" --outputFile "Reference.cs" --namespace "*,WSCDC" --targetFramework "net9.0" --internal
+  ```
 
 ---
 
