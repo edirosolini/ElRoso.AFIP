@@ -6,6 +6,33 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-05-14
+
+🎉 **Read-side de ARCA** — features que la comunidad pidió desde el día uno.
+
+### Added
+
+- **WSCDC (Constatación de Comprobantes)** — `IInvoiceVerificationService.VerifyAsync()` valida que un comprobante recibido (CAE/CAI/CAEA) es auténtico contra ARCA. Caso de uso clave: cargar facturas de proveedores con confianza.
+- **WSCComu (e-Ventanilla / DFE)** — `IElectronicMailboxService.ListAsync()` y `ConsumeAsync()`. Leé el Domicilio Fiscal Electrónico desde código en lugar de loguearte al portal. Evitá notificaciones tácitas a los 5 días hábiles.
+- Nuevo enum `AuthorizationModeARCAEnum` (CAE / CAI / CAEA) para WSCDC.
+- Nuevos DTOs públicos: `InvoiceVerificationRequest`, `InvoiceVerificationResponse`, `MailboxQueryRequest`, `MailboxQueryResponse`, `MailboxMessageSummary`, `MailboxConsumeRequest`, `MailboxConsumeResponse`, `MailboxMessage`, `MailboxAttachment`.
+- Connected Services nuevos (`WSCDC`, `WSCComu`) bajo `ARCA/Connected Services/`. Generados con `dotnet-svcutil` — regeneración documentada en CLAUDE.md del repo.
+- Nuevos validators FluentValidation: `InvoiceVerificationValidator`.
+- Nuevos wrappers SOAP internos: `IInvoiceVerificationOperations`, `IElectronicMailboxOperations`.
+- Samples runnable: `samples/InvoiceVerification/`, `samples/ElectronicMailbox/`.
+- Secciones nuevas en README + Cookbook con pitfalls específicos de cada WS.
+- 25 tests nuevos (total: 176/176 pasando).
+
+### Changed
+
+- `ARCAOptions.WsccomuUrl` es propiedad `public` settable (a diferencia de `WsfeUrl`/`WsfexUrl` que son internal computed). Razón: ARCA no publica URL de producción del WSCComu — el usuario debe configurarla.
+- `dotnet-svcutil` agregado como local tool (`dotnet-tools.json`) para regenerar proxies SOAP.
+
+### Notas
+
+- **Mis Comprobantes Recibidos (listado)** — sigue sin WS oficial de ARCA. Documentado en [ROADMAP](./docs/ROADMAP.md).
+- **Libro IVA Digital** — sin WS oficial actualmente (solo portal). Documentado en ROADMAP.
+
 ## [1.0.0] — 2026-05-14
 
 Primer release estable (GA). API pública estable bajo SemVer — cambios breaking solo en `v2.x`.
