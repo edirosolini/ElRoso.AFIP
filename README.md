@@ -1,40 +1,88 @@
 # ElRoso.ARCA
 
-Cliente .NET 9 para la facturación electrónica con **ARCA** (ex-AFIP). Soporta autenticación WSAA, emisión de comprobantes domésticos (WSFEv1) y de exportación (WSFEXv1), y validación de CUIT por padrón.
+[![CI](https://github.com/edirosolini/ElRoso.ARCA/actions/workflows/ci.yml/badge.svg?branch=mainline)](https://github.com/edirosolini/ElRoso.ARCA/actions/workflows/ci.yml)
+[![NuGet](https://img.shields.io/nuget/v/ElRoso.ARCA.svg?label=NuGet)](https://www.nuget.org/packages/ElRoso.ARCA)
+[![Downloads](https://img.shields.io/nuget/dt/ElRoso.ARCA.svg)](https://www.nuget.org/packages/ElRoso.ARCA)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![.NET 9](https://img.shields.io/badge/.NET-9.0-512BD4)](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
+
+> **Cliente .NET 9 para facturación electrónica con ARCA (ex-AFIP).** Hecho para que devs argentinos no sufran integrando como sufrimos los que vinimos antes.
+
+**Soporta:**
+- ✅ Autenticación WSAA (PKCS#7 + token cache cifrado DPAPI)
+- ✅ Facturación doméstica WSFEv1 (FA / FB / FC + Notas de Crédito y Débito)
+- ✅ Facturación exportación WSFEXv1 (Factura, NC, ND)
+- ✅ Padrón A5 (consulta de inscripción AFIP por CUIT)
+- ✅ Generación del QR oficial para impresión
 
 ---
 
-## Quick Start — Factura A en 5 líneas
+## 📑 Tabla de contenidos
 
-```csharp
-var response = await billingService.AuthorizeAsync(new BillingDocumentNumberingRequest
-{
-    BillingDocumentType = BillingDocumentTypeARCAEnum.FA,
-    BillingDocumentBookPrefix = 1,
-    BillingDocumentDate = DateTime.Today,
-    Currency = "Pesos",
-    ExchangeRate = 1,
-    ConceptType = ConceptTypeARCAEnum.Products,
-    AmountTax = 826.45,
-    BillingDocumentNumberingTaxes = [new() { PercentageTax = "21.00", BaseAmount = 826.45, Amount = 173.55 }],
-    IssuingCompany = new() { DocumentType = DocumentTypeARCAEnum.CUIT, DocumentNumber = 20123456789 },
-    Client = new() { DocumentType = DocumentTypeARCAEnum.CUIT, DocumentNumber = 30987654321 },
-});
-
-Console.WriteLine(response.Result ? $"CAE: {response.CAE}" : string.Join('\n', response.Errors));
-```
+- [Instalación](#-instalación)
+- [Quick Start — Factura A en 5 líneas](#-quick-start--factura-a-en-5-líneas)
+- [Configuración](#%EF%B8%8F-configuración)
+- [Manejo de certificados](#-manejo-de-certificados)
+- [Tipos de comprobante soportados](#-tipos-de-comprobante-soportados)
+- [Recetario por escenario](#-recetario-por-escenario)
+  - [Factura A con CUIT del cliente](#factura-a-con-cuit-del-cliente)
+  - [Factura B / Factura C (Monotributo)](#factura-b--factura-c-monotributo)
+  - [Notas de Crédito y Débito](#notas-de-crédito-y-débito)
+  - [Factura de Servicios](#factura-de-servicios)
+  - [Factura de Exportación](#factura-de-exportación)
+- [Manejo de errores](#-manejo-de-errores)
+- [Ambientes (Homologación vs Producción)](#-ambientes-homologación-vs-producción)
+- [QR code para impresión](#-qr-code-para-impresión)
+- [Cookbook — Pitfalls comunes](./docs/COOKBOOK.md)
+- [Contribuir](#-contribuir)
+- [Apoyar el proyecto](#%EF%B8%8F-apoyar-el-proyecto)
 
 ---
 
-## Instalación
+## 📦 Instalación
 
 ```bash
-dotnet add package ElRoso.Arca
+dotnet add package ElRoso.ARCA
+```
+
+> **Requisitos:** .NET 9.0 o superior. Funciona en Windows, Linux y macOS. El cache de tokens usa **DPAPI** en Windows y JSON plano en Linux/macOS (si esto es problema, ver [Cookbook → cache de tokens](./docs/COOKBOOK.md#cache-de-tokens)).
+
+---
+
+## ⚡ Quick Start — Factura A en 5 líneas
+
+```csharp
+// 1) Registrá la lib en DI
+builder.Services.AddARCAClient(options =>
+{
+    options.IsProduction        = false;                    // homologación
+    options.CertificatePath     = "/certs/mi-empresa.pfx";
+    options.CertificatePassword = "miPassword";
+});
+
+// 2) Emití la factura
+var response = await billingService.AuthorizeAsync(new BillingDocumentNumberingRequest
+{
+    BillingDocumentType       = BillingDocumentTypeARCAEnum.FA,
+    BillingDocumentBookPrefix = 1,
+    BillingDocumentDate       = DateTime.Today,
+    Currency                  = "Pesos",
+    ExchangeRate              = 1,
+    ConceptType               = ConceptTypeARCAEnum.Products,
+    AmountTax                 = 826.45,
+    BillingDocumentNumberingTaxes = [new() { PercentageTax = "21.00", BaseAmount = 826.45, Amount = 173.55 }],
+    IssuingCompany = new() { DocumentType = DocumentTypeARCAEnum.CUIT, DocumentNumber = 20123456789 },
+    Client         = new() { DocumentType = DocumentTypeARCAEnum.CUIT, DocumentNumber = 30987654321 },
+});
+
+Console.WriteLine(response.Result
+    ? $"CAE: {response.CAE} — Nro: {response.BillingDocumentNumber}"
+    : $"Errores: {string.Join("; ", response.Errors)}");
 ```
 
 ---
 
-## Configuración
+## ⚙️ Configuración
 
 ### `appsettings.json`
 
@@ -50,7 +98,7 @@ dotnet add package ElRoso.Arca
 }
 ```
 
-> **Seguridad:** nunca commitees `CertificatePassword` en texto plano. Usá variables de entorno, Azure Key Vault, AWS Secrets Manager, o User Secrets en desarrollo.
+> **🔒 Seguridad:** **nunca** commitees `CertificatePassword` en texto plano. Usá variables de entorno, Azure Key Vault, AWS Secrets Manager, o User Secrets en desarrollo.
 
 ### Registro en `Program.cs`
 
@@ -68,53 +116,102 @@ builder.Services.AddARCAClient(options =>
 
 ---
 
-## Manejo de Certificados
+## 🔐 Manejo de certificados
 
 ARCA requiere un certificado X.509 con clave privada (`.pfx` o `.p12`) para firmar los tokens de sesión (WSAA).
 
-### Pasos para obtener el certificado
+### Generar el certificado paso a paso
 
-1. **Generar el par de claves** (si no tenés):
+```bash
+# 1. Generar la clave privada
+openssl genrsa -out empresa.key 2048
 
-   ```bash
-   openssl genrsa -out empresa.key 2048
-   openssl req -new -key empresa.key -subj "/C=AR/O=Mi Empresa/CN=20123456789" -out empresa.csr
-   ```
+# 2. Generar el CSR (Certificate Signing Request)
+openssl req -new -key empresa.key -subj "/C=AR/O=Mi Empresa/CN=20123456789/serialNumber=CUIT 20123456789" -out empresa.csr
 
-2. **Cargar el CSR en el portal de ARCA** en _Administración de Certificados Digitales_ y descargar el `.crt`.
+# 3. Cargar el CSR en el portal ARCA → "Administración de Certificados Digitales"
+#    y descargar el .crt firmado.
 
-3. **Combinar clave y certificado en un `.pfx`**:
+# 4. Combinar clave privada + certificado en un .pfx
+openssl pkcs12 -export -in empresa.crt -inkey empresa.key -out empresa.pfx -passout pass:miPassword
+```
 
-   ```bash
-   openssl pkcs12 -export -in empresa.crt -inkey empresa.key -out empresa.pfx -passout pass:miPassword
-   ```
+### Docker
 
-4. **Ubicar el `.pfx`** en la ruta configurada en `CertificatePath`. En contenedores Docker, montarlo como volumen:
-   ```yaml
-   volumes:
-     - ./certs:/certs:ro
-   ```
+```yaml
+services:
+  myapp:
+    volumes:
+      - ./certs:/certs:ro
+    environment:
+      Arca__CertificatePath: /certs/empresa.pfx
+      Arca__CertificatePassword: ${ARCA_CERT_PASSWORD}
+```
 
-> **Importante:** El archivo `.pfx` contiene la clave privada. Nunca lo commitees al repositorio.
-
----
-
-## Tipos de Comprobante Soportados
-
-| Enum                                   | Valor ARCA | Descripción                        |
-| -------------------------------------- | ---------- | ---------------------------------- |
-| `FA`                                   | 1          | Factura A                          |
-| `NDA` / `NCA`                          | 2 / 3      | Nota de Débito / Crédito A         |
-| `FB`                                   | 6          | Factura B                          |
-| `NDB` / `NCB`                          | 7 / 8      | Nota de Débito / Crédito B         |
-| `FC`                                   | 11         | Factura C                          |
-| `NDC` / `NCC`                          | 12 / 13    | Nota de Débito / Crédito C         |
-| `InvoiceExport`                        | 19         | Factura de Exportación             |
-| `DebitNoteExport` / `CreditNoteExport` | 20 / 21    | Notas Débito / Crédito Exportación |
+> ⚠️ **El `.pfx` contiene la clave privada.** Nunca lo commitees. Si por error te pasó, **revocá el certificado en ARCA inmediatamente**.
 
 ---
 
-## Notas de Crédito/Débito
+## 📋 Tipos de comprobante soportados
+
+| Enum | Código ARCA | Descripción |
+|------|-------------|-------------|
+| `FA` | 1 | Factura A |
+| `NDA` / `NCA` | 2 / 3 | Nota de Débito / Crédito A |
+| `FB` | 6 | Factura B |
+| `NDB` / `NCB` | 7 / 8 | Nota de Débito / Crédito B |
+| `FC` | 11 | Factura C |
+| `NDC` / `NCC` | 12 / 13 | Nota de Débito / Crédito C |
+| `InvoiceExport` | 19 | Factura de Exportación |
+| `DebitNoteExport` / `CreditNoteExport` | 20 / 21 | Notas Débito / Crédito Exportación |
+| `Remittances` | 91 | Remito R |
+
+---
+
+## 📖 Recetario por escenario
+
+### Factura A con CUIT del cliente
+
+```csharp
+new BillingDocumentNumberingRequest
+{
+    BillingDocumentType       = BillingDocumentTypeARCAEnum.FA,
+    BillingDocumentBookPrefix = 1,
+    BillingDocumentDate       = DateTime.Today,
+    Currency                  = "Pesos",
+    ExchangeRate              = 1,
+    ConceptType               = ConceptTypeARCAEnum.Products,
+    AmountTax                 = 1000,
+    BillingDocumentNumberingTaxes =
+    [
+        new() { PercentageTax = "21.00", BaseAmount = 1000, Amount = 210 }
+    ],
+    IssuingCompany = new() { DocumentType = DocumentTypeARCAEnum.CUIT, DocumentNumber = 20123456789 },
+    Client         = new() { DocumentType = DocumentTypeARCAEnum.CUIT, DocumentNumber = 30987654321 },
+}
+```
+
+> La lib consulta automáticamente el **Padrón** para resolver el nombre y la condición IVA del cliente.
+
+### Factura B / Factura C (Monotributo)
+
+```csharp
+// FC — Monotributo no discrimina IVA
+new BillingDocumentNumberingRequest
+{
+    BillingDocumentType       = BillingDocumentTypeARCAEnum.FC,
+    BillingDocumentBookPrefix = 1,
+    BillingDocumentDate       = DateTime.Today,
+    Currency                  = "Pesos",
+    ExchangeRate              = 1,
+    ConceptType               = ConceptTypeARCAEnum.Products,
+    AmountTax                 = 1210,                          // total con IVA incluido
+    IssuingCompany = new() { DocumentType = DocumentTypeARCAEnum.CUIT, DocumentNumber = 20123456789 },
+    Client         = new() { DocumentType = DocumentTypeARCAEnum.SIN_IDENTIFICAR, DocumentNumber = 0 },
+}
+```
+
+### Notas de Crédito y Débito
 
 Deben incluir los comprobantes asociados:
 
@@ -129,35 +226,31 @@ new BillingDocumentNumberingRequest
             BillingDocumentType       = BillingDocumentTypeARCAEnum.FA,
             BillingDocumentNumber     = 42,
             BillingDocumentBookPrefix = 1,
-            BillingDocumentDate       = new DateTime(2025, 1, 15),
+            BillingDocumentDate       = new DateTime(2026, 1, 15),
         }
     ],
-    // resto de campos...
+    // resto de campos como Factura A...
 }
 ```
 
----
+### Factura de Servicios
 
-## Factura de Servicios
-
-Para concepto `Services`, agregar rango de fechas y vencimiento:
+Concepto `Services` requiere rango de fechas y vencimiento:
 
 ```csharp
 ConceptType        = ConceptTypeARCAEnum.Services,
-DateOfServicesFrom = new DateTime(2025, 3, 1),
-DateOfServicesTo   = new DateTime(2025, 3, 31),
-PaymentDue         = new DateTime(2025, 4, 10),
+DateOfServicesFrom = new DateTime(2026, 3, 1),
+DateOfServicesTo   = new DateTime(2026, 3, 31),
+PaymentDue         = new DateTime(2026, 4, 10),
 ```
 
----
-
-## Factura de Exportación
+### Factura de Exportación
 
 ```csharp
 new BillingDocumentNumberingRequest
 {
     BillingDocumentType = BillingDocumentTypeARCAEnum.InvoiceExport,
-    BillingDocumentId   = 1,           // ID único del comprobante de exportación
+    BillingDocumentId   = 1,                                  // ID único de la factura de exportación
     Currency            = "Dolares",
     ExchangeRate        = 1050.50,
     ConceptType         = ConceptTypeARCAEnum.Products,
@@ -166,23 +259,19 @@ new BillingDocumentNumberingRequest
     {
         DocumentType   = DocumentTypeARCAEnum.CUIT,
         DocumentNumber = 55123456789,
-        CountryId      = 123,          // código de país ARCA
+        CountryId      = 123,                                 // código de país ARCA
         Address        = "123 Main St",
         ClientLanguage = "Inglés",
     },
-    Items =
-    [
-        new() { ItemDescription = "Software license", Amount = 500.00 },
-    ],
-    // ...
+    Items = [ new() { ItemDescription = "Software license", Amount = 500.00 } ],
 }
 ```
 
 ---
 
-## Manejo de Errores
+## ⚠️ Manejo de errores
 
-La librería lanza excepciones tipadas. Catcheá lo que necesitás:
+La lib lanza excepciones tipadas:
 
 ```csharp
 try
@@ -191,52 +280,66 @@ try
 }
 catch (ARCAValidationException ex)
 {
-    // Errores de validación local (FluentValidation) — no llegó a la red
+    // Validaciones locales (FluentValidation) — no llegó a la red
     foreach (var err in ex.Errors) Console.WriteLine(err);
 }
 catch (ARCAAuthException ex)
 {
-    // Fallo de autenticación: certificado mal, WSAA caído, token inválido
+    // Falla de autenticación: certificado mal, WSAA caído, firma PKCS#7 fallida
     Console.WriteLine(ex.Message);
 }
 catch (ARCAServiceException ex)
 {
-    // ARCA devolvió error desde WSFEv1/WSFEXv1/Padrón
-    Console.WriteLine(ex.Message);
+    // ARCA devolvió un error desde WSFEv1/WSFEXv1/Padrón
+    Console.WriteLine($"Code {ex.ErrorCode}: {ex.Message}");
 }
 ```
 
 ---
 
-## Ambientes
+## 🌐 Ambientes (Homologación vs Producción)
 
-| Propiedad              | Homologación (default) | Producción               |
-| ---------------------- | ---------------------- | ------------------------ |
-| `IsProduction = false` | `wsaahomo.afip.gov.ar` | `wsaa.afip.gov.ar`       |
-| WSFEv1                 | `wswhomo.afip.gov.ar`  | `servicios1.afip.gov.ar` |
-| WSFEXv1                | `wswhomo.afip.gov.ar`  | `servicios1.afip.gov.ar` |
-| Padrón                 | `awshomo.afip.gov.ar`  | `aws.afip.gov.ar`        |
+| Servicio | Homologación (`IsProduction=false`) | Producción (`IsProduction=true`) |
+|----------|-------------------------------------|----------------------------------|
+| WSAA     | `wsaahomo.afip.gov.ar`              | `wsaa.afip.gov.ar`               |
+| WSFEv1   | `wswhomo.afip.gov.ar`               | `servicios1.afip.gov.ar`         |
+| WSFEXv1  | `wswhomo.afip.gov.ar`               | `servicios1.afip.gov.ar`         |
+| Padrón   | `awshomo.afip.gov.ar`               | `aws.afip.gov.ar`                |
+
+> **Tip:** siempre arrancá en homologación. Un mismo certificado no sirve para ambos ambientes — necesitás dos certificados separados.
 
 ---
 
-## Código QR para Impresión
+## 🔳 QR code para impresión
 
 ```csharp
 var qr = response.QRCode();
-// https://www.afip.gob.ar/fe/qr/?p=eyJ2ZXIiOjEsImZl...
+// Devuelve: https://www.afip.gob.ar/fe/qr/?p=eyJ2ZXIiOjEsImZl...
 ```
 
----
-
-## Stack
-
-- **.NET 9**
-- **System.ServiceModel** (WCF cliente — SOAP)
-- **FluentValidation** — validaciones de request
-- **System.Security.Cryptography.Pkcs** — firma PKCS#7 para WSAA
-- **System.Security.Cryptography.ProtectedData** — cifrado DPAPI de la caché de tokens (Windows)
-- **Newtonsoft.Json** — serialización de la caché de tokens
+Esa URL la generás como QR (con QRCoder, ZXing, etc.) y la imprimís en el ticket o PDF junto con el resto de los datos del CAE.
 
 ---
 
-_ElRoso.Arca — Di Rosolini Ezequiel / El Roso_
+## 🤝 Contribuir
+
+PRs y issues bienvenidos. Antes de mandar un PR grande, abrí una [Discussion](https://github.com/edirosolini/ElRoso.ARCA/discussions) para alinear el approach. Ver [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+Si encontraste una vulnerabilidad de seguridad, **no la reportes como issue público** — ver [SECURITY.md](./SECURITY.md).
+
+---
+
+## ❤️ Apoyar el proyecto
+
+Si esta lib te ahorró horas de sufrimiento con ARCA, considerá:
+
+- ⭐ Darle una **star al repo**
+- 💬 Compartirlo con otros devs argentinos
+- ☕ [Invitarme un cafecito](https://cafecito.app/edirosolini)
+- 💙 [GitHub Sponsors](https://github.com/sponsors/edirosolini) *(en aprobación)*
+
+---
+
+## 📜 Licencia
+
+[MIT](./LICENSE) © Di Rosolini Ezequiel (El Roso)
