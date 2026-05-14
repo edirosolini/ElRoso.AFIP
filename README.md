@@ -277,6 +277,37 @@ else
 
 > Requiere el servicio **`wscdc`** adherido en el portal de ARCA. Sample runnable en [`samples/InvoiceVerification/`](./samples/InvoiceVerification/).
 
+### Leer notificaciones del DFE (e-Ventanilla)
+
+Consulta el buzón fiscal electrónico — ideal para correr en background y notificar al usuario apenas llega algo.
+
+```csharp
+var mailbox = sp.GetRequiredService<IElectronicMailboxService>();
+
+var inbox = await mailbox.ListAsync(new MailboxQueryRequest
+{
+    IssuingCompany = new() { DocumentType = DocumentTypeARCAEnum.CUIT, DocumentNumber = 20123456789 },
+    Page = 1,
+    PageSize = 50,
+});
+
+foreach (var msg in inbox.Messages)
+    Console.WriteLine($"[{msg.Id}] {msg.PublishedDate:yyyy-MM-dd} {msg.StateName} {msg.Subject}");
+
+// Leer el contenido completo (marca como leída en ARCA):
+var detail = await mailbox.ConsumeAsync(new MailboxConsumeRequest
+{
+    IssuingCompany = new() { DocumentNumber = 20123456789 },
+    MessageId = inbox.Messages[0].Id,
+});
+
+Console.WriteLine(detail.Message?.Body);
+foreach (var a in detail.Message?.Attachments ?? [])
+    File.WriteAllBytes(a.FileName, a.Content);
+```
+
+> Requiere `wsccomu` adherido + DFE constituido. Sample en [`samples/ElectronicMailbox/`](./samples/ElectronicMailbox/). Producción URL: ver Cookbook.
+
 ### Factura de Exportación
 
 ```csharp
