@@ -70,9 +70,9 @@
 		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="9.0.15" />
 		<PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
 		<PackageReference Include="System.ServiceModel.Duplex" Version="6.0.0" />
-		<PackageReference Include="System.ServiceModel.Federation" Version="8.1.2" />
-		<PackageReference Include="System.ServiceModel.Http" Version="8.1.2" />
-		<PackageReference Include="System.ServiceModel.NetTcp" Version="8.1.2" />
+		<PackageReference Include="System.ServiceModel.Federation" Version="10.0.652802" />
+		<PackageReference Include="System.ServiceModel.Http" Version="10.0.652802" />
+		<PackageReference Include="System.ServiceModel.NetTcp" Version="10.0.652802" />
 		<PackageReference Include="System.ServiceModel.Security" Version="6.0.0" />
 	</ItemGroup>
 
