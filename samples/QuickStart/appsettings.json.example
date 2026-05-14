@@ -1,0 +1,13 @@
+{
+  "Arca": {
+    "IsProduction": false,
+    "CertificatePath": "/path/to/your/homologation.pfx",
+    "CertificatePassword": "",
+    "TokenCacheDirectory": "./.arca-tokens",
+    "SoapTimeoutSeconds": 30
+  },
+  "Sample": {
+    "IssuerCuit": "20123456789",
+    "ClientCuit": "30987654321"
+  }
+}

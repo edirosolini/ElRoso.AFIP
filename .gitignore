@@ -91,6 +91,10 @@ appsettings.Local.json
 appsettings.*.local.json
 secrets.json
 
+# Real appsettings.json for samples contains tenant data — only the .example is tracked.
+samples/**/appsettings.json
+!samples/**/appsettings.json.example
+
 *.pfx
 *.snk
 
