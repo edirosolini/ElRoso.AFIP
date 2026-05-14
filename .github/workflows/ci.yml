@@ -1,0 +1,150 @@
+name: CI
+
+on:
+  push:
+    branches: [mainline]
+  pull_request:
+    branches: [mainline]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  CONFIGURATION: 'Release'
+
+  # EN: Lower bound. Raise gradually as test suite grows toward 60%.
+  # ES: Cota mínima. Subir a medida que crezca la suite hacia 60%.
+  MIN_COVERAGE: '25'
+
+jobs:
+  build-and-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # SourceLink needs full history for deterministic builds
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore ElRoso.ARCA.sln
+
+      - name: Build
+        run: dotnet build ElRoso.ARCA.sln -c ${{ env.CONFIGURATION }} --no-restore
+
+      - name: Test with coverage
+        run: |
+          dotnet test tests/ElRoso.ARCA.Tests/ElRoso.ARCA.Tests.csproj \
+            -c ${{ env.CONFIGURATION }} \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --logger "trx;LogFileName=test-results.trx" \
+            --results-directory ./TestResults
+
+      - name: Compute coverage (excluding auto-generated SOAP proxies)
+        id: coverage
+        run: |
+          set -euo pipefail
+
+          COVERAGE_FILE=$(find ./TestResults -name 'coverage.cobertura.xml' | head -n 1)
+          if [ -z "$COVERAGE_FILE" ]; then
+            echo "::error::Coverage file not found"
+            exit 1
+          fi
+
+          # Parse cobertura XML, sum lines for files that are NOT auto-generated.
+          # Parsea cobertura XML, suma líneas excluyendo código autogenerado.
+          COVERAGE=$(python3 - <<'EOF'
+          import xml.etree.ElementTree as ET, os, sys
+          tree = ET.parse(os.environ['COVERAGE_FILE'])
+          root = tree.getroot()
+          total, covered = 0, 0
+          for cls in root.iter('class'):
+              fname = cls.get('filename', '')
+              if 'Connected Services' in fname or fname.endswith('Reference.cs') or '/obj/' in fname:
+                  continue
+              for line in cls.iter('line'):
+                  total += 1
+                  if int(line.get('hits', '0')) > 0:
+                      covered += 1
+          rate = (covered / total * 100) if total else 0
+          print(f"{rate:.2f}")
+          sys.stderr.write(f"Lines covered: {covered}/{total}\n")
+          EOF
+          )
+          export COVERAGE_FILE
+          echo "value=$COVERAGE" >> "$GITHUB_OUTPUT"
+          echo "## Code coverage: ${COVERAGE}%" >> "$GITHUB_STEP_SUMMARY"
+          echo "Minimum required: ${MIN_COVERAGE}%" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          COVERAGE_FILE: ''
+
+      - name: Enforce minimum coverage
+        run: |
+          COV="${{ steps.coverage.outputs.value }}"
+          MIN="${MIN_COVERAGE}"
+          awk -v c="$COV" -v m="$MIN" 'BEGIN { exit !(c+0 >= m+0) }' || {
+            echo "::error::Coverage $COV% is below minimum $MIN%"
+            exit 1
+          }
+          echo "Coverage $COV% meets minimum $MIN%"
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: ./TestResults/**/coverage.cobertura.xml
+          retention-days: 14
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ./TestResults/**/*.trx
+          retention-days: 14
+
+  # EN: Pack the NuGet package on every push to verify the lib is publishable.
+  # ES: Empaqueta el NuGet en cada push para verificar que el paquete sigue siendo publicable.
+  pack-verify:
+    name: Verify NuGet pack
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Pack (dry-run, version 0.0.0-ci)
+        run: |
+          dotnet pack ARCA/ElRoso.ARCA.csproj \
+            -c ${{ env.CONFIGURATION }} \
+            -p:Version=0.0.0-ci.${{ github.run_number }} \
+            -p:ContinuousIntegrationBuild=true \
+            --output ./nupkg
+
+      - name: Upload nupkg artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nupkg-preview
+          path: ./nupkg/*.nupkg
+          retention-days: 7
