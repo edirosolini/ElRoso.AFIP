@@ -1,0 +1,126 @@
+name: Release
+
+# EN: Triggered by semver tags. Tag format: v1.2.3, v1.2.3-preview.1, v1.2.3-rc.1, etc.
+# ES: Se dispara con tags semver. Formato: v1.2.3, v1.2.3-preview.1, v1.2.3-rc.1, etc.
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (without leading v, e.g. 1.0.0-preview.1)'
+        required: true
+        type: string
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  CONFIGURATION: 'Release'
+
+jobs:
+  release:
+    name: Build, test and publish to NuGet.org
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write   # required to create a GitHub Release
+      packages: write   # not used (publishing to nuget.org, not GH Packages) but harmless
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # SourceLink needs full history
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Resolve version from tag or input
+        id: version
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            # Strip leading 'v' from refs/tags/vX.Y.Z
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+
+          # Sanity check: must look like X.Y.Z[-suffix]
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.\-]+)?$ ]]; then
+            echo "::error::Version '$VERSION' is not a valid SemVer (X.Y.Z[-suffix])"
+            exit 1
+          fi
+
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $VERSION" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Restore
+        run: dotnet restore ElRoso.ARCA.sln
+
+      - name: Build
+        run: |
+          dotnet build ElRoso.ARCA.sln \
+            -c ${{ env.CONFIGURATION }} \
+            --no-restore \
+            -p:Version=${{ steps.version.outputs.value }} \
+            -p:ContinuousIntegrationBuild=true
+
+      - name: Test (gate the release)
+        run: |
+          dotnet test tests/ElRoso.ARCA.Tests/ElRoso.ARCA.Tests.csproj \
+            -c ${{ env.CONFIGURATION }} \
+            --no-build \
+            --logger "trx;LogFileName=test-results.trx" \
+            --results-directory ./TestResults
+
+      - name: Pack
+        run: |
+          dotnet pack ARCA/ElRoso.ARCA.csproj \
+            -c ${{ env.CONFIGURATION }} \
+            --no-build \
+            -p:Version=${{ steps.version.outputs.value }} \
+            -p:ContinuousIntegrationBuild=true \
+            --output ./nupkg
+
+      - name: Publish to NuGet.org
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          if [ -z "$NUGET_API_KEY" ]; then
+            echo "::error::NUGET_API_KEY secret is not configured"
+            exit 1
+          fi
+
+          # Push both nupkg and snupkg (symbols) so consumers can step into the source.
+          # Pushea nupkg y snupkg (símbolos) para que consumidores puedan debuggear el código.
+          dotnet nuget push './nupkg/*.nupkg' \
+            --api-key "$NUGET_API_KEY" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+
+      - name: Upload nupkg artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nupkg-${{ steps.version.outputs.value }}
+          path: ./nupkg/*.*nupkg
+          retention-days: 90
+
+      - name: Create GitHub Release
+        if: github.event_name == 'push'  # only on tag push, not manual dispatch
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          prerelease: ${{ contains(steps.version.outputs.value, '-') }}
+          files: |
+            ./nupkg/*.nupkg
+            ./nupkg/*.snupkg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
