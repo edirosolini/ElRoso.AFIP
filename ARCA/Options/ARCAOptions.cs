@@ -41,6 +41,16 @@ public class ARCAOptions
     /// </summary>
     public int SoapTimeoutSeconds { get; set; } = 30;
 
+    /// <summary>
+    /// EN: WSCComu (e-Ventanilla / DFE) endpoint URL. Defaults to the homologation endpoint.
+    /// ARCA has not publicly listed the production URL for this service — set this property
+    /// explicitly to the production URL when you go live. Contact webservices-desa@arca.gob.ar
+    /// if unsure.
+    /// ES: URL del WSCComu. Default es homologación. ARCA no publica la URL de producción —
+    /// configurar explícitamente al pasar a producción.
+    /// </summary>
+    public string WsccomuUrl { get; set; } = "https://stable-middleware-tecno-ext.afip.gob.ar/ve-ws/services/veconsumer";
+
     // --- Internal resolved URLs (set by SetIsProduction) ---
 
     internal string WsaaUrl => IsProduction

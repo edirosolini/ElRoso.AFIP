@@ -16,6 +16,7 @@ Cosas que en su momento me hicieron perder horas. Acá las anoto para que vos no
 - [Notas de Crédito y Débito](#notas-de-crédito-y-débito)
 - [Factura de Exportación](#factura-de-exportación)
 - [WSCDC — Verificación de comprobantes recibidos](#wscdc--verificación-de-comprobantes-recibidos)
+- [WSCComu — DFE / e-Ventanilla](#wsccomu--dfe--e-ventanilla)
 - [Docker y deploy](#docker-y-deploy)
 - [Concurrencia y reintentos](#concurrencia-y-reintentos)
 
@@ -233,6 +234,101 @@ Pasa cuando los datos enviados no matchean exactamente lo que ARCA tiene registr
 ### "Querés validar al recibir cada factura electrónica de proveedores"
 
 Si tu app procesa facturas electrónicas automáticamente (lectura de XML AFIP-Reportes, etc.), correr WSCDC al ingestar cada una es una buena práctica antifraude. Costo: un round-trip SOAP por factura. Bajo en absoluto, alto en escala — considerá cache en tu lado para no re-validar lo mismo cada vez.
+
+## WSCComu — DFE / e-Ventanilla
+
+### Prerequisitos
+
+1. **Constituir el Domicilio Fiscal Electrónico** en el portal de ARCA (una sola vez, no hay WS para esto)
+2. **Adherir el servicio `wsccomu`** ("Consumir Comunicaciones de Ventanilla Electrónica") en Administrador de Relaciones
+3. **Delegar** al CUIT del certificado si vas a operar para terceros
+
+### URL de producción TBD
+
+Al día de hoy, ARCA solo publica oficialmente el endpoint de **homologación**:
+
+```
+https://stable-middleware-tecno-ext.afip.gob.ar/ve-ws/services/veconsumer
+```
+
+El endpoint productivo no está públicamente documentado. Cuando tu CUIT pasa a producción:
+
+1. Pedir el endpoint a `webservices-desa@arca.gob.ar`
+2. Setear `ARCAOptions.WsccomuUrl = "<url-prod>"`
+
+Por eso la propiedad `WsccomuUrl` es `public` settable (a diferencia de `WsfeUrl` que es internal computed).
+
+### Paginación
+
+El WSCComu pagina **del lado del servidor**:
+
+```csharp
+var page1 = await mailbox.ListAsync(new MailboxQueryRequest { Page = 1, PageSize = 50, ... });
+// page1.TotalPages tells you how many pages exist
+// page1.TotalItems tells you total count
+
+for (int p = 1; p <= page1.TotalPages; p++)
+{
+    var page = await mailbox.ListAsync(new MailboxQueryRequest { Page = p, PageSize = 50, ... });
+    // process page.Messages
+}
+```
+
+### Estados de las notificaciones
+
+Cada notificación tiene un `StateId` (int) + `StateName` (string). Los valores cambian entre organismos. Para listar los estados válidos en un ambiente, ARCA expone `consultarEstados` (no implementado en `v1.1.0` — backlog).
+
+Para filtrar por estado:
+
+```csharp
+var soloNuevas = await mailbox.ListAsync(new MailboxQueryRequest
+{
+    IssuingCompany = issuer,
+    StateId = 1,  // típicamente "Nueva" — confirmar con tu instancia ARCA
+});
+```
+
+### Consumir vs Listar
+
+| Operación | Qué hace | Marca como leída? |
+|-----------|----------|-------------------|
+| `ListAsync` | Lista resúmenes (sin cuerpo, sin adjuntos) | ❌ NO |
+| `ConsumeAsync` | Devuelve el mensaje completo (cuerpo + adjuntos) | ✅ SÍ |
+
+⚠️ **`ConsumeAsync` marca la notificación como leída en ARCA.** No se puede revertir desde el WS. Si tu UI ofrece "preview sin marcar como leído", usá solo `ListAsync` para esos.
+
+### Notificación tácita a los 5 días hábiles
+
+ARCA considera una notificación "tácitamente notificada" si pasan 5 días hábiles desde la publicación sin que el contribuyente la consulte. **Importante**: el simple acto de listar via WSCComu **no resetea ese reloj** — solo `ConsumeAsync` (que marca como leída) lo hace.
+
+Recomendado: correr `ListAsync` cada hora en background. Si aparece algo "Nueva", alertar al usuario. El usuario decide si lo abre (= `ConsumeAsync`).
+
+### Adjuntos
+
+Los adjuntos vienen en base64 ya decodificados en `Attachment.Content` (byte[]). El nombre original está en `Attachment.FileName`. El MIME type no se devuelve — inferir de la extensión:
+
+```csharp
+foreach (var a in message.Attachments)
+{
+    var mime = Path.GetExtension(a.FileName).ToLowerInvariant() switch
+    {
+        ".pdf" => "application/pdf",
+        ".xml" => "application/xml",
+        ".png" => "image/png",
+        ".jpg" or ".jpeg" => "image/jpeg",
+        _ => "application/octet-stream",
+    };
+    // ...
+}
+```
+
+### Códigos de error típicos
+
+| Error | Significado | Solución |
+|-------|-------------|----------|
+| Fault `Acceso no autorizado` | Servicio `wsccomu` no adherido al CUIT | Adherir en Administrador de Relaciones |
+| Fault `No tiene DFE constituido` | El CUIT no tiene DFE habilitado | Constituir DFE en el portal (una vez) |
+| Token / sign error | TA expirado o de otro servicio | La lib refresca solo — si insiste, borrar el `.bin` del token cache |
 
 ## Docker y deploy
 

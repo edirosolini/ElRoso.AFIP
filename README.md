@@ -16,6 +16,7 @@
 - ✅ Padrón A5 (consulta de inscripción AFIP por CUIT)
 - ✅ Generación del QR oficial para impresión
 - ✅ **Verificación de comprobantes recibidos vía WSCDC** (desde v1.1.0)
+- ✅ **Notificaciones del Domicilio Fiscal Electrónico (e-Ventanilla) vía WSCComu** (desde v1.1.0)
 
 ---
 

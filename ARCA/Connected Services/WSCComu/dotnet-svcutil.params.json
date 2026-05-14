@@ -1,0 +1,17 @@
+{
+  "providerId": "Microsoft.Tools.ServiceModel.Svcutil",
+  "version": "8.0.0",
+  "options": {
+    "inputs": [
+      "https://stable-middleware-tecno-ext.afip.gob.ar/ve-ws/services/veconsumer?wsdl"
+    ],
+    "internalTypeAccess": true,
+    "namespaceMappings": [
+      "*, WSCComu"
+    ],
+    "outputFile": "Reference.cs",
+    "runtimeIdentifier": "any",
+    "targetFramework": "net9.0",
+    "typeReuseMode": "All"
+  }
+}

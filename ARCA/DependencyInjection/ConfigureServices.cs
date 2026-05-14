@@ -51,9 +51,11 @@ public static class ARCAServiceCollectionExtensions
         services.AddSingleton<IWsfeOperations, WsfeOperations>();
         services.AddSingleton<IWsfexOperations, WsfexOperations>();
         services.AddSingleton<IInvoiceVerificationOperations, InvoiceVerificationOperations>();
+        services.AddSingleton<IElectronicMailboxOperations, ElectronicMailboxOperations>();
 
         services.AddSingleton<IBillingDocumentNumberingService, BillingDocumentNumberingService>();
         services.AddSingleton<IInvoiceVerificationService, InvoiceVerificationService>();
+        services.AddSingleton<IElectronicMailboxService, ElectronicMailboxService>();
 
         // Singleton: validators are stateless and safe to reuse.
         // Singleton: los validadores son stateless y se pueden reusar.

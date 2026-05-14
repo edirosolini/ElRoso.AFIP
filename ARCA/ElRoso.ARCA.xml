@@ -181,6 +181,53 @@
             Estado interno del request al WSAA. No es parte de la API pública.
             </summary>
         </member>
+        <member name="T:ElRoso.ARCA.Domains.Requests.MailboxConsumeRequest">
+            <summary>
+            EN: Request to consume (read + mark as read) a notification from ARCA's e-Ventanilla.
+            ES: Request para consumir (leer + marcar como leída) una notificación del e-Ventanilla.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Requests.MailboxConsumeRequest.MessageId">
+            <summary>ID of the message to consume (from MailboxMessageSummary.Id).</summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Domains.Requests.MailboxQueryRequest">
+            <summary>
+            EN: Request to query notifications from ARCA's e-Ventanilla (WSCComu).
+            Supports filtering by state, date range, system, attachment flag; paginated.
+            ES: Request para consultar notificaciones del e-Ventanilla de ARCA (WSCComu).
+            Soporta filtros por estado, rango de fechas, sistema, adjunto; paginado.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Requests.MailboxQueryRequest.IssuingCompany">
+            <summary>Issuing company being queried (your CUIT or the delegating CUIT).</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Requests.MailboxQueryRequest.StateId">
+            <summary>State id from ARCA (use null for all). / ID de estado (null para todos).</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Requests.MailboxQueryRequest.FromDate">
+            <summary>Filter by date range — from. / Filtro fecha desde.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Requests.MailboxQueryRequest.ToDate">
+            <summary>Filter by date range — to. / Filtro fecha hasta.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Requests.MailboxQueryRequest.HasAttachment">
+            <summary>Filter to messages that have attachments. / Filtra mensajes con adjunto.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Requests.MailboxQueryRequest.PublishingSystemId">
+            <summary>Filter by publishing system id. / Filtra por ID del sistema publicador.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Requests.MailboxQueryRequest.Page">
+            <summary>1-based page number. Default 1. / Número de página (base 1). Default 1.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Requests.MailboxQueryRequest.PageSize">
+            <summary>Items per page (max varies per service). / Items por página.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Requests.MailboxQueryRequest.Reference1">
+            <summary>Optional reference filter #1. / Filtro de referencia opcional #1.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Requests.MailboxQueryRequest.Reference2">
+            <summary>Optional reference filter #2. / Filtro de referencia opcional #2.</summary>
+        </member>
         <member name="P:ElRoso.ARCA.Domains.Responses.BillingDocumentNumberingResponse.Errors">
             <summary>
             Business errors returned by ARCA (observaciones, códigos de error).
@@ -214,6 +261,36 @@
         <member name="P:ElRoso.ARCA.Domains.Responses.InvoiceVerificationResponse.Errors">
             <summary>Errors returned by ARCA (request-level problems). / Errores devueltos por ARCA.</summary>
         </member>
+        <member name="T:ElRoso.ARCA.Domains.Responses.MailboxConsumeResponse">
+            <summary>
+            EN: Full message obtained after consuming a notification (marks it as read).
+            ES: Mensaje completo obtenido al consumir una notificación (la marca como leída).
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Domains.Responses.MailboxMessage">
+            <summary>
+            EN: Full notification with body and attachment metadata.
+            ES: Notificación completa con cuerpo y metadata de adjuntos.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Responses.MailboxMessage.Body">
+            <summary>Full message body (HTML or plain text). / Cuerpo completo del mensaje.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Responses.MailboxAttachment.Content">
+            <summary>Attachment bytes (base64-decoded). / Bytes del adjunto (base64-decodificado).</summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Domains.Responses.MailboxQueryResponse">
+            <summary>
+            EN: Paginated list of notification summaries from ARCA's e-Ventanilla.
+            ES: Listado paginado de resúmenes de notificaciones del e-Ventanilla.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Domains.Responses.MailboxMessageSummary">
+            <summary>
+            EN: Notification summary (no body / attachments). Use ConsumeAsync to get the full message.
+            ES: Resumen de notificación (sin cuerpo ni adjuntos). Usar ConsumeAsync para el mensaje completo.
+            </summary>
+        </member>
         <member name="T:ElRoso.ARCA.Domains.Services.IBillingDocumentNumberingService">
             <summary>
             Requests a CAE (Electronic Authorization Code) from ARCA for a billing document.
@@ -245,6 +322,26 @@
             <summary>
             Loads an X.509 certificate (with private key) from a .pfx/.p12 file.
             Carga un certificado X.509 (con clave privada) desde un archivo .pfx/.p12.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Domains.Services.IElectronicMailboxService">
+            <summary>
+            EN: Reads notifications from ARCA's e-Ventanilla (Domicilio Fiscal Electrónico / DFE).
+            Replaces the need to log in to the ARCA portal to check the inbox.
+            ES: Lee notificaciones del e-Ventanilla de ARCA (Domicilio Fiscal Electrónico / DFE).
+            Reemplaza la necesidad de loguearse al portal de ARCA para chequear la bandeja.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Domains.Services.IElectronicMailboxService.ListAsync(ElRoso.ARCA.Domains.Requests.MailboxQueryRequest,System.Threading.CancellationToken)">
+            <summary>
+            EN: List notifications matching the given filter. Paginated.
+            ES: Lista notificaciones que matcheen el filtro. Paginado.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Domains.Services.IElectronicMailboxService.ConsumeAsync(ElRoso.ARCA.Domains.Requests.MailboxConsumeRequest,System.Threading.CancellationToken)">
+            <summary>
+            EN: Consume (read + mark as read) a notification. Returns the full message with body and attachments.
+            ES: Consume (lee + marca como leída) una notificación. Devuelve el mensaje completo con cuerpo y adjuntos.
             </summary>
         </member>
         <member name="T:ElRoso.ARCA.Domains.Services.IInvoiceVerificationService">
@@ -327,12 +424,28 @@
             Timeout de las llamadas SOAP en segundos.
             </summary>
         </member>
+        <member name="P:ElRoso.ARCA.Options.ARCAOptions.WsccomuUrl">
+            <summary>
+            EN: WSCComu (e-Ventanilla / DFE) endpoint URL. Defaults to the homologation endpoint.
+            ARCA has not publicly listed the production URL for this service — set this property
+            explicitly to the production URL when you go live. Contact webservices-desa@arca.gob.ar
+            if unsure.
+            ES: URL del WSCComu. Default es homologación. ARCA no publica la URL de producción —
+            configurar explícitamente al pasar a producción.
+            </summary>
+        </member>
         <member name="M:ElRoso.ARCA.Services.LoginTicketService.GetNetworkTimeAsync(System.Threading.CancellationToken)">
             <summary>
             Fetches current time from ARCA's NTP server, cached for 60 s.
             Falls back to system clock if NTP is unreachable — WSAA tolerates ±10 min.
             Obtiene la hora del servidor NTP de ARCA, cacheada por 60 s.
             Usa el reloj del sistema como fallback — WSAA tolera ±10 min de desvío.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Services.Soap.IElectronicMailboxOperations">
+            <summary>
+            EN: Thin wrapper over the ARCA WSCComu SOAP client (e-Ventanilla / DFE notifications).
+            ES: Wrapper fino sobre el cliente SOAP del WSCComu de ARCA.
             </summary>
         </member>
         <member name="T:ElRoso.ARCA.Services.Soap.IInvoiceVerificationOperations">
@@ -839,6 +952,249 @@
             <remarks/>
         </member>
         <member name="P:Padron.dummyReturn.dbserver">
+            <remarks/>
+        </member>
+        <member name="T:WSCComu.VentanillaWSFault">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.VentanillaWSFault.faultCode">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.VentanillaWSFault.faultMessage">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.VentanillaWSFault.category">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.VentanillaWSFault.possibleSolutions">
+            <remarks/>
+        </member>
+        <member name="T:WSCComu.adjunto">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.filename">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.content">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.compressed">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.compressedSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.signed">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.signedSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.encrypted">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.encryptedSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.processed">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.processedSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.public">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.publicSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.md5">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.contentSize">
+            <remarks/>
+        </member>
+        <member name="T:WSCComu.ComunicacionSimplificada">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.idComunicacion">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.cuitDestinatario">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.fechaPublicacion">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.fechaVencimiento">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.sistemaPublicador">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.sistemaPublicadorDesc">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.estado">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.estadoDesc">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.asunto">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.prioridad">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.tieneAdjunto">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.referencia1">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.referencia2">
+            <remarks/>
+        </member>
+        <member name="T:WSCComu.Comunicacion">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Comunicacion.mensaje">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Comunicacion.tiempoDeVida">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Comunicacion.adjuntos">
+            <remarks/>
+        </member>
+        <member name="T:WSCComu.RespuestaPaginada">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.RespuestaPaginada.pagina">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.RespuestaPaginada.totalPaginas">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.RespuestaPaginada.itemsPorPagina">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.RespuestaPaginada.totalItems">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.RespuestaPaginada.items">
+            <remarks/>
+        </member>
+        <member name="T:WSCComu.Filter">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.estado">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.estadoSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.fechaDesde">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.fechaHasta">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.comunicacionIdDesde">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.comunicacionIdDesdeSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.comunicacionIdHasta">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.comunicacionIdHastaSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.tieneAdjunto">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.tieneAdjuntoSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.sistemaPublicadorId">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.sistemaPublicadorIdSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.pagina">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.resultadosPorPagina">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.resultadosPorPaginaSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.referencia1">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.referencia2">
+            <remarks/>
+        </member>
+        <member name="T:WSCComu.AuthRequest">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.AuthRequest.token">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.AuthRequest.sign">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.AuthRequest.cuitRepresentada">
+            <remarks/>
+        </member>
+        <member name="T:WSCComu.Sistema">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Sistema.id">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Sistema.descripcion">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Sistema.certCNs">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Sistema.subservicios">
+            <remarks/>
+        </member>
+        <member name="T:WSCComu.Subservicio">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Subservicio.nombre">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Subservicio.descripcion">
+            <remarks/>
+        </member>
+        <member name="T:WSCComu.DummyResult">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.DummyResult.dbserver">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.DummyResult.appserver">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.DummyResult.authserver">
+            <remarks/>
+        </member>
+        <member name="T:WSCComu.Estado">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Estado.id">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Estado.descripcion">
             <remarks/>
         </member>
         <member name="T:WSFEXv1.ClsFEXAuthRequest">

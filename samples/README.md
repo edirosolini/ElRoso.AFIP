@@ -29,6 +29,7 @@ dotnet run
 |--------|---------------|
 | [QuickStart](./QuickStart/) | Emisión de Factura A mínima en homologación |
 | [InvoiceVerification](./InvoiceVerification/) | Verificación de un comprobante recibido vía WSCDC |
+| [ElectronicMailbox](./ElectronicMailbox/) | Lectura de notificaciones del DFE / e-Ventanilla vía WSCComu |
 
 ## Próximamente
 
