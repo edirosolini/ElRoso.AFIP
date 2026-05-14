@@ -1,0 +1,49 @@
+name: ✨ Feature request
+description: Proponer un feature nuevo o una mejora
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por sugerir un feature. Antes de proponer cambios grandes, mejor abrir primero una [Discussion](https://github.com/edirosolini/ElRoso.ARCA/discussions) para alinear el approach.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: ¿Qué problema resuelve?
+      description: Describí el problema o limitación actual. ¿Qué dolor tenés hoy?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Solución propuesta
+      description: ¿Cómo te imaginás que se resuelve? API, comportamiento, ejemplo de uso.
+      render: csharp
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+      description: ¿Probaste otras formas de resolverlo? ¿Por qué no funcionaron?
+
+  - type: checkboxes
+    id: arca-feature
+    attributes:
+      label: ¿Está relacionado con un servicio ARCA específico?
+      options:
+        - label: WSAA (autenticación)
+        - label: WSFEv1 (facturación doméstica)
+        - label: WSFEXv1 (facturación exportación)
+        - label: Padrón (consulta inscripción)
+        - label: Otro servicio ARCA (especificar)
+        - label: No, es una mejora interna de la lib
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Contexto adicional
+      description: Links a docs de ARCA, RGs relevantes, casos de uso, etc.

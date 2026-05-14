@@ -1,0 +1,95 @@
+name: 🐛 Bug report
+description: Reportar un comportamiento incorrecto de la librería
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por reportar un bug. Cuanto más concreto el reporte, más rápido el fix.
+
+        ⚠️ **No incluyas en este reporte:** CUITs, certificados, claves privadas, tokens TA, ni datos fiscales reales.
+
+  - type: input
+    id: version
+    attributes:
+      label: Versión de ElRoso.ARCA
+      description: ej. `1.0.0-preview.1`
+      placeholder: "1.0.0-preview.1"
+    validations:
+      required: true
+
+  - type: input
+    id: dotnet
+    attributes:
+      label: Versión de .NET
+      placeholder: ".NET 9.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Ambiente ARCA
+      options:
+        - Homologación
+        - Producción
+        - No aplica / no llega a la red
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Sistema operativo
+      options:
+        - Windows
+        - Linux
+        - macOS
+        - Docker (Linux)
+        - Azure App Service / similar
+        - Otro
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: ¿Qué pasó?
+      description: Descripción del bug.
+      placeholder: "Cuando llamo a AuthorizeAsync con FA, me devuelve..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: ¿Qué esperabas que pasara?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Cómo reproducirlo
+      description: Idealmente un snippet mínimo de código que reproduzca el problema. Sin datos sensibles.
+      render: csharp
+      placeholder: |
+        var response = await billingService.AuthorizeAsync(new BillingDocumentNumberingRequest
+        {
+            // ...
+        });
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Stack trace / logs relevantes
+      description: Si hay excepciones, pegá el stack trace completo. **Quitá CUITs y datos sensibles antes.**
+      render: text
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Contexto adicional
+      description: Cualquier otra cosa que ayude.
