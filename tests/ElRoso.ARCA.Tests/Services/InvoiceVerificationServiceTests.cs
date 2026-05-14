@@ -1,13 +1,8 @@
 // EN: Tests for InvoiceVerificationService — validation + token cache + WSCDC operations orchestration.
 // ES: Tests para InvoiceVerificationService — validación + caché de tokens + orquestación de WSCDC.
-using ElRoso.ARCA.Caching;
-using ElRoso.ARCA.Domains.Enums;
-using ElRoso.ARCA.Domains.Requests;
-using ElRoso.ARCA.Domains.Services;
-using ElRoso.ARCA.Exceptions;
-using ElRoso.ARCA.Options;
-using ElRoso.ARCA.Services;
-using ElRoso.ARCA.Services.Soap;
+using ElRoso.ARCA.Core;
+using ElRoso.ARCA.Billing;
+using ElRoso.ARCA.Read;
 using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -48,7 +43,7 @@ public class InvoiceVerificationServiceTests
         IssuingCompany = new() { DocumentType = DocumentTypeARCAEnum.CUIT, DocumentNumber = 20123456789 },
     };
 
-    private static ElRoso.ARCA.Domains.Responses.LoginTicketResponse FreshTicket() => new()
+    private static ElRoso.ARCA.Core.LoginTicketResponse FreshTicket() => new()
     {
         Token = "fake-token",
         Sign = "fake-sign",
@@ -190,7 +185,7 @@ public class InvoiceVerificationServiceTests
 
         tokenCacheMock
             .Setup(t => t.GetAsync("wscdc", It.IsAny<long>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ElRoso.ARCA.Domains.Responses.LoginTicketResponse?)null);
+            .ReturnsAsync((ElRoso.ARCA.Core.LoginTicketResponse?)null);
 
         loginTicketServiceMock
             .Setup(l => l.GetLoginTicketAsync("wscdc", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -209,7 +204,7 @@ public class InvoiceVerificationServiceTests
             Times.Once);
 
         tokenCacheMock.Verify(t => t.SetAsync(
-            "wscdc", It.IsAny<long>(), It.IsAny<ElRoso.ARCA.Domains.Responses.LoginTicketResponse>(), It.IsAny<CancellationToken>()),
+            "wscdc", It.IsAny<long>(), It.IsAny<ElRoso.ARCA.Core.LoginTicketResponse>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 }

@@ -1,7 +1,8 @@
 // EN: Tests for BillingDocumentNumberingOtherTaxValidator - validates non-VAT taxes (IIBB, internos, etc.).
 // ES: Tests para BillingDocumentNumberingOtherTaxValidator - valida impuestos no-IVA (IIBB, internos, etc.).
-using ElRoso.ARCA.Domains.Requests;
-using ElRoso.ARCA.Validations;
+using ElRoso.ARCA.Core;
+using ElRoso.ARCA.Billing;
+using ElRoso.ARCA.Read;
 
 namespace ElRoso.ARCA.Tests.Validations;
 

@@ -1,6 +1,6 @@
 // EN: Tests for ARCAAuthException - thrown on WSAA / certificate / signing failures.
 // ES: Tests para ARCAAuthException - falla de WSAA / certificado / firma.
-using ElRoso.ARCA.Exceptions;
+using ElRoso.ARCA.Core;
 
 namespace ElRoso.ARCA.Tests.Exceptions;
 

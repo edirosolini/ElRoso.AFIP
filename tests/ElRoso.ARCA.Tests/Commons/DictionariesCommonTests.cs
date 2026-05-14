@@ -1,6 +1,6 @@
 // EN: Tests for DictionariesCommon - maps business strings to ARCA codes.
 // ES: Tests para DictionariesCommon - mapea strings de negocio a códigos ARCA.
-using ElRoso.ARCA.Commons;
+using ElRoso.ARCA.Billing;
 
 namespace ElRoso.ARCA.Tests.Commons;
 

@@ -1,10 +1,9 @@
 // EN: Verifies an invoice received from a vendor against ARCA WSCDC.
 // ES: Verifica una factura recibida de un proveedor contra el WSCDC de ARCA.
-using ElRoso.ARCA.DependencyInjection;
-using ElRoso.ARCA.Domains.Enums;
-using ElRoso.ARCA.Domains.Requests;
-using ElRoso.ARCA.Domains.Services;
-using ElRoso.ARCA.Exceptions;
+using ElRoso.ARCA;
+using ElRoso.ARCA.Core;
+using ElRoso.ARCA.Billing;
+using ElRoso.ARCA.Read;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

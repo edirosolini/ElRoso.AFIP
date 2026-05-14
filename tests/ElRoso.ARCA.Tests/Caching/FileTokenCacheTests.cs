@@ -1,7 +1,8 @@
 // EN: Tests for FileTokenCache — encrypted file-based ticket cache.
 // ES: Tests para FileTokenCache — caché de tickets en archivos cifrados.
-using ElRoso.ARCA.Caching;
-using ElRoso.ARCA.Domains.Responses;
+using ElRoso.ARCA.Core;
+using ElRoso.ARCA.Billing;
+using ElRoso.ARCA.Read;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace ElRoso.ARCA.Tests.Caching;

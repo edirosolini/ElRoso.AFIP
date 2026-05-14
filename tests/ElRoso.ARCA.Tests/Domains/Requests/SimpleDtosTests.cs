@@ -1,7 +1,8 @@
 // EN: Trivial tests for small DTOs/requests to keep coverage at production threshold.
 // ES: Tests triviales para DTOs/requests pequeños para mantener cobertura en threshold de producción.
-using ElRoso.ARCA.Domains.Enums;
-using ElRoso.ARCA.Domains.Requests;
+using ElRoso.ARCA.Core;
+using ElRoso.ARCA.Billing;
+using ElRoso.ARCA.Read;
 
 namespace ElRoso.ARCA.Tests.Domains.Requests;
 

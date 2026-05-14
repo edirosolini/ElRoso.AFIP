@@ -1,10 +1,9 @@
 // EN: Tests for AddARCAClient — verifies DI registration of all ARCA services.
 // ES: Tests para AddARCAClient — verifica el registro en DI de todos los servicios ARCA.
-using ElRoso.ARCA.Caching;
-using ElRoso.ARCA.DependencyInjection;
-using ElRoso.ARCA.Domains.Requests;
-using ElRoso.ARCA.Domains.Services;
-using ElRoso.ARCA.Options;
+using ElRoso.ARCA.Core;
+using ElRoso.ARCA;
+using ElRoso.ARCA.Billing;
+using ElRoso.ARCA.Read;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

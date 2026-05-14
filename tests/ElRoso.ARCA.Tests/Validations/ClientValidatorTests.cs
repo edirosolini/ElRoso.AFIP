@@ -1,8 +1,8 @@
 // EN: Tests for ClientValidator - validates the recipient client of a billing document.
 // ES: Tests para ClientValidator - valida el cliente receptor del comprobante.
-using ElRoso.ARCA.Domains.Enums;
-using ElRoso.ARCA.Domains.Requests;
-using ElRoso.ARCA.Validations;
+using ElRoso.ARCA.Core;
+using ElRoso.ARCA.Billing;
+using ElRoso.ARCA.Read;
 
 namespace ElRoso.ARCA.Tests.Validations;
 

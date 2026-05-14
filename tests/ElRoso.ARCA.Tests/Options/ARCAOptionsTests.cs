@@ -1,6 +1,6 @@
 // EN: Tests for ARCAOptions - defaults and environment URL resolution.
 // ES: Tests para ARCAOptions - defaults y resolución de URLs por ambiente.
-using ElRoso.ARCA.Options;
+using ElRoso.ARCA.Core;
 
 namespace ElRoso.ARCA.Tests.Options;
 

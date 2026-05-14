@@ -1,7 +1,8 @@
 // EN: Tests for computed properties on BillingDocumentNumberingRequest (Total, sums, rounding).
 // ES: Tests para propiedades computadas de BillingDocumentNumberingRequest (Total, sumas, redondeo).
-using ElRoso.ARCA.Domains.Enums;
-using ElRoso.ARCA.Domains.Requests;
+using ElRoso.ARCA.Core;
+using ElRoso.ARCA.Billing;
+using ElRoso.ARCA.Read;
 
 namespace ElRoso.ARCA.Tests.Domains.Requests;
 

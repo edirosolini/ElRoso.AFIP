@@ -1,16 +1,11 @@
 // <copyright file="ConfigureServices.cs" company="PlaceholderCompany">
 // Copyright (c) PlaceholderCompany. All rights reserved.
 // </copyright>
+namespace ElRoso.ARCA;
 
-namespace ElRoso.ARCA.DependencyInjection;
-
-using ElRoso.ARCA.Caching;
-using ElRoso.ARCA.Domains.Requests;
-using ElRoso.ARCA.Domains.Services;
-using ElRoso.ARCA.Options;
-using ElRoso.ARCA.Services;
-using ElRoso.ARCA.Services.Soap;
-using ElRoso.ARCA.Validations;
+using ElRoso.ARCA.Core;
+using ElRoso.ARCA.Billing;
+using ElRoso.ARCA.Read;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 

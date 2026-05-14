@@ -1,10 +1,9 @@
 // EN: Lists notifications from ARCA's e-Ventanilla (DFE). Optionally consumes the first unread.
 // ES: Lista notificaciones del e-Ventanilla de ARCA (DFE). Opcionalmente consume la primera no leída.
-using ElRoso.ARCA.DependencyInjection;
-using ElRoso.ARCA.Domains.Enums;
-using ElRoso.ARCA.Domains.Requests;
-using ElRoso.ARCA.Domains.Services;
-using ElRoso.ARCA.Exceptions;
+using ElRoso.ARCA;
+using ElRoso.ARCA.Core;
+using ElRoso.ARCA.Billing;
+using ElRoso.ARCA.Read;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

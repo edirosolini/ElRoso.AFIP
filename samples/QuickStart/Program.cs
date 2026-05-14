@@ -1,10 +1,9 @@
 // EN: Minimal sample — emits a Factura A in ARCA homologation and prints the CAE + QR URL.
 // ES: Sample mínimo — emite una Factura A en homologación ARCA e imprime el CAE + URL del QR.
-using ElRoso.ARCA.DependencyInjection;
-using ElRoso.ARCA.Domains.Enums;
-using ElRoso.ARCA.Domains.Requests;
-using ElRoso.ARCA.Domains.Services;
-using ElRoso.ARCA.Exceptions;
+using ElRoso.ARCA;
+using ElRoso.ARCA.Core;
+using ElRoso.ARCA.Billing;
+using ElRoso.ARCA.Read;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

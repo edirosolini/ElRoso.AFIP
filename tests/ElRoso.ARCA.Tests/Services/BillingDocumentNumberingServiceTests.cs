@@ -4,14 +4,9 @@
 // ES: Tests para BillingDocumentNumberingService — cubren el gate de validación y las ramas de
 // routing que no dependen de los SOAP clients reales. La cobertura profunda requiere extraer
 // un factory para los clientes WCF (diferido a refactor futuro).
-using ElRoso.ARCA.Caching;
-using ElRoso.ARCA.Domains.Enums;
-using ElRoso.ARCA.Domains.Requests;
-using ElRoso.ARCA.Domains.Services;
-using ElRoso.ARCA.Exceptions;
-using ElRoso.ARCA.Options;
-using ElRoso.ARCA.Services;
-using ElRoso.ARCA.Services.Soap;
+using ElRoso.ARCA.Core;
+using ElRoso.ARCA.Billing;
+using ElRoso.ARCA.Read;
 using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -171,7 +166,7 @@ public class BillingDocumentNumberingServiceTests
     // ES: Happy path + ramas de error ejercitadas vía los wrappers SOAP.
     // ====================================================================
 
-    private static ElRoso.ARCA.Domains.Responses.LoginTicketResponse FreshTicket() => new()
+    private static ElRoso.ARCA.Core.LoginTicketResponse FreshTicket() => new()
     {
         Token = "fake-token",
         Sign = "fake-sign",
@@ -446,7 +441,7 @@ public class BillingDocumentNumberingServiceTests
         // ES: Caché devuelve null → service debe llamar a ILoginTicketService por uno fresco.
         tokenCacheMock
             .Setup(t => t.GetAsync(It.IsAny<string>(), It.IsAny<long>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ElRoso.ARCA.Domains.Responses.LoginTicketResponse?)null);
+            .ReturnsAsync((ElRoso.ARCA.Core.LoginTicketResponse?)null);
 
         loginTicketServiceMock
             .Setup(l => l.GetLoginTicketAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -471,7 +466,7 @@ public class BillingDocumentNumberingServiceTests
         // EN: Fresh ticket must be persisted into the cache.
         // ES: Ticket fresco debe persistirse en el caché.
         tokenCacheMock.Verify(t => t.SetAsync(
-            "wsfe", It.IsAny<long>(), It.IsAny<ElRoso.ARCA.Domains.Responses.LoginTicketResponse>(), It.IsAny<CancellationToken>()),
+            "wsfe", It.IsAny<long>(), It.IsAny<ElRoso.ARCA.Core.LoginTicketResponse>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 }

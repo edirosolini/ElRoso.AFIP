@@ -1,14 +1,8 @@
 // EN: Tests for ElectronicMailboxService — orchestrates WSAA + WSCComu (e-Ventanilla).
 // ES: Tests para ElectronicMailboxService — orquesta WSAA + WSCComu (e-Ventanilla).
-using ElRoso.ARCA.Caching;
-using ElRoso.ARCA.Domains.Enums;
-using ElRoso.ARCA.Domains.Requests;
-using ElRoso.ARCA.Domains.Responses;
-using ElRoso.ARCA.Domains.Services;
-using ElRoso.ARCA.Exceptions;
-using ElRoso.ARCA.Options;
-using ElRoso.ARCA.Services;
-using ElRoso.ARCA.Services.Soap;
+using ElRoso.ARCA.Core;
+using ElRoso.ARCA.Billing;
+using ElRoso.ARCA.Read;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace ElRoso.ARCA.Tests.Services;

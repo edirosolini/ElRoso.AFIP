@@ -1,9 +1,9 @@
 // EN: Tests for BillingDocumentNumberingResponse — FromRequest factory and QRCode generation.
 // ES: Tests para BillingDocumentNumberingResponse — factory FromRequest y generación del QR.
 using System.Text;
-using ElRoso.ARCA.Domains.Enums;
-using ElRoso.ARCA.Domains.Requests;
-using ElRoso.ARCA.Domains.Responses;
+using ElRoso.ARCA.Core;
+using ElRoso.ARCA.Billing;
+using ElRoso.ARCA.Read;
 using Newtonsoft.Json.Linq;
 
 namespace ElRoso.ARCA.Tests.Domains.Responses;

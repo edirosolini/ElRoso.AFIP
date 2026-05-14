@@ -1,7 +1,8 @@
 // EN: Tests for ClientRequest - read-only Condition/ClientName mutated via internal setters.
 // ES: Tests para ClientRequest - Condition/ClientName son read-only y mutan via setters internos.
-using ElRoso.ARCA.Domains.Enums;
-using ElRoso.ARCA.Domains.Requests;
+using ElRoso.ARCA.Core;
+using ElRoso.ARCA.Billing;
+using ElRoso.ARCA.Read;
 
 namespace ElRoso.ARCA.Tests.Domains.Requests;
 

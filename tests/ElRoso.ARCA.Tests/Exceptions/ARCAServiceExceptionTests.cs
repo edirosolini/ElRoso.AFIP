@@ -1,6 +1,6 @@
 // EN: Tests for ARCAServiceException - thrown when ARCA web services return errors.
 // ES: Tests para ARCAServiceException - error devuelto por los WS de ARCA.
-using ElRoso.ARCA.Exceptions;
+using ElRoso.ARCA.Core;
 
 namespace ElRoso.ARCA.Tests.Exceptions;
 

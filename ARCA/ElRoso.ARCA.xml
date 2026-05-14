@@ -4,14 +4,124 @@
         <name>ElRoso.ARCA</name>
     </assembly>
     <members>
-        <member name="T:ElRoso.ARCA.Caching.FileTokenCache">
+        <member name="F:ElRoso.ARCA.Billing.ConceptTypeARCAEnum.Products">
+            <summary>Productos.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Billing.ConceptTypeARCAEnum.Services">
+            <summary>Servicios.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Billing.ConceptTypeARCAEnum.Otros">
+            <summary>Otros (productos y servicios).</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.BillingDocumentNumberingRequest.Version">
+            <summary>QR code schema version. / Versión del esquema del QR.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.BillingDocumentNumberingResponse.Errors">
+            <summary>
+            Business errors returned by ARCA (observaciones, códigos de error).
+            Errores de negocio devueltos por ARCA.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Billing.BillingDocumentNumberingResponse.QRCode">
+            <summary>
+            Generates the ARCA QR code URL for printing on the invoice.
+            Genera la URL del código QR de ARCA para imprimir en el comprobante.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Billing.IBillingDocumentNumberingService">
+            <summary>
+            Requests a CAE (Electronic Authorization Code) from ARCA for a billing document.
+            Solicita un CAE (Código de Autorización Electrónico) a ARCA para un comprobante.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Billing.IBillingDocumentNumberingService.AuthorizeAsync(ElRoso.ARCA.Billing.BillingDocumentNumberingRequest,System.Threading.CancellationToken)">
+            <summary>
+            Validates the request and obtains a CAE from ARCA.
+            Valida el request y obtiene un CAE de ARCA.
+            </summary>
+            <param name="request">Billing document to authorize.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>Response with CAE and document number, or error list.</returns>
+        </member>
+        <member name="T:ElRoso.ARCA.Billing.IPadronOperations">
+            <summary>
+            EN: Thin wrapper over the ARCA Padron A5 SOAP client.
+                Exists so consumers can be unit-tested without touching the network.
+            ES: Wrapper fino sobre el cliente SOAP del Padrón A5 de ARCA.
+                Existe para que los consumidores puedan testearse sin tocar la red.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Billing.PadronPersonaResult">
+            <summary>
+            EN: POCO result of a Padron query — hides WCF types from the consumer.
+            ES: Resultado POCO de una consulta al Padrón — oculta los tipos WCF del consumidor.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.PadronPersonaResult.Errors">
+            <summary>Errors returned by Padron, if any. / Errores devueltos por el Padrón.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.PadronPersonaResult.IsMonotributo">
+            <summary>True if the client is registered as Monotributo. / True si el cliente está como Monotributo.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.PadronPersonaResult.ClientName">
+            <summary>Resolved client name (razón social or apellido + nombre). / Nombre del cliente resuelto.</summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Billing.IWsfeOperations">
+            <summary>
+            EN: Thin wrapper over the ARCA WSFEv1 SOAP client (domestic e-invoicing).
+            ES: Wrapper fino sobre el cliente SOAP del WSFEv1 de ARCA (facturación doméstica).
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Billing.IWsfeOperations.GetLastNumberAsync(System.String,System.String,System.Int64,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            EN: Returns the last authorized document number for the given type + book.
+            ES: Devuelve el último número autorizado para el tipo + libro dados.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Billing.IWsfeOperations.SolicitarCaeAsync(System.String,System.String,System.Int64,ElRoso.ARCA.Billing.BillingDocumentNumberingRequest,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            EN: Requests a CAE for one document. Returns POCO result with errors / observations / approval.
+            ES: Solicita un CAE para un documento. Devuelve resultado POCO con errores / observaciones / aprobación.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Billing.WsfeCaeResult">
+            <summary>
+            EN: POCO result of a CAE request to WSFEv1 — hides WCF types from the consumer.
+            ES: Resultado POCO de una solicitud de CAE a WSFEv1 — oculta los tipos WCF del consumidor.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.WsfeCaeResult.IsApproved">
+            <summary>True when CAE was granted (Resultado == "A"). / True cuando el CAE fue otorgado.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.WsfeCaeResult.Cae">
+            <summary>The CAE code returned by ARCA. / Código CAE devuelto por ARCA.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.WsfeCaeResult.CaeExpiration">
+            <summary>CAE expiration date. / Fecha de vencimiento del CAE.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.WsfeCaeResult.Errors">
+            <summary>Errors returned by WSFEv1 (header-level or detail observations on rejection).</summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Billing.IWsfexOperations">
+            <summary>
+            EN: Thin wrapper over the ARCA WSFEXv1 SOAP client (export e-invoicing).
+            ES: Wrapper fino sobre el cliente SOAP del WSFEXv1 de ARCA (facturación exportación).
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Billing.WsfexCaeResult">
+            <summary>
+            EN: POCO result of an Authorize request to WSFEXv1.
+            ES: Resultado POCO de una solicitud Authorize a WSFEXv1.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Core.FileTokenCache">
             <summary>
             File-based token cache. One encrypted binary file per service+company combination.
             Uses per-key SemaphoreSlim to prevent concurrent read/write corruption.
             Caché de tokens basada en archivos cifrados. Un archivo por combinación servicio+empresa.
             </summary>
         </member>
-        <member name="M:ElRoso.ARCA.Caching.FileTokenCache.SerializeToken(ElRoso.ARCA.Domains.Responses.LoginTicketResponse)">
+        <member name="M:ElRoso.ARCA.Core.FileTokenCache.SerializeToken(ElRoso.ARCA.Core.LoginTicketResponse)">
             <summary>
             Serializes and encrypts a token for disk storage.
             On Windows uses DPAPI (CurrentUser scope) — on other platforms writes plain JSON.
@@ -19,31 +129,202 @@
             En Windows usa DPAPI (scope CurrentUser) — en otras plataformas escribe JSON plano.
             </summary>
         </member>
-        <member name="M:ElRoso.ARCA.Caching.FileTokenCache.DeserializeToken(System.Byte[])">
+        <member name="M:ElRoso.ARCA.Core.FileTokenCache.DeserializeToken(System.Byte[])">
             <summary>
             Decrypts and deserializes a token from disk.
             Descifra y deserializa un token desde disco.
             </summary>
         </member>
-        <member name="T:ElRoso.ARCA.Caching.ITokenCache">
+        <member name="T:ElRoso.ARCA.Core.ITokenCache">
             <summary>
             Abstraction for storing and retrieving WSAA login tickets.
             Abstracción para almacenar y recuperar tokens del WSAA.
             </summary>
         </member>
-        <member name="M:ElRoso.ARCA.Caching.ITokenCache.GetAsync(System.String,System.Int64,System.Threading.CancellationToken)">
+        <member name="M:ElRoso.ARCA.Core.ITokenCache.GetAsync(System.String,System.Int64,System.Threading.CancellationToken)">
             <summary>
             Returns a valid (non-expired) ticket, or null if cache miss / expired.
             Retorna un ticket válido (no expirado), o null si no existe o expiró.
             </summary>
         </member>
-        <member name="M:ElRoso.ARCA.Caching.ITokenCache.SetAsync(System.String,System.Int64,ElRoso.ARCA.Domains.Responses.LoginTicketResponse,System.Threading.CancellationToken)">
+        <member name="M:ElRoso.ARCA.Core.ITokenCache.SetAsync(System.String,System.Int64,ElRoso.ARCA.Core.LoginTicketResponse,System.Threading.CancellationToken)">
             <summary>
             Persists a new ticket. Overwrites any existing entry for the same service+company.
             Guarda un nuevo ticket. Sobreescribe cualquier entrada existente para el mismo servicio+empresa.
             </summary>
         </member>
-        <member name="M:ElRoso.ARCA.DependencyInjection.ARCAServiceCollectionExtensions.AddARCAClient(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{ElRoso.ARCA.Options.ARCAOptions})">
+        <member name="F:ElRoso.ARCA.Core.BillingDocumentTypeARCAEnum.FA">
+            <summary>Factura A.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Core.BillingDocumentTypeARCAEnum.NDA">
+            <summary>Nota de Débito A.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Core.BillingDocumentTypeARCAEnum.NCA">
+            <summary>Nota de Crédito A.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Core.BillingDocumentTypeARCAEnum.FB">
+            <summary>Factura B.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Core.BillingDocumentTypeARCAEnum.NDB">
+            <summary>Nota de Débito B.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Core.BillingDocumentTypeARCAEnum.NCB">
+            <summary>Nota de Crédito B.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Core.BillingDocumentTypeARCAEnum.FC">
+            <summary>Factura C.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Core.BillingDocumentTypeARCAEnum.NDC">
+            <summary>Nota de Débito C.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Core.BillingDocumentTypeARCAEnum.NCC">
+            <summary>Nota de Crédito C.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Core.BillingDocumentTypeARCAEnum.InvoiceExport">
+            <summary>Factura de Exportación.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Core.BillingDocumentTypeARCAEnum.DebitNoteExport">
+            <summary>Nota de Débito por Operaciones con el Exterior.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Core.BillingDocumentTypeARCAEnum.CreditNoteExport">
+            <summary>Nota de Crédito por Operaciones con el Exterior.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Core.BillingDocumentTypeARCAEnum.Remittances">
+            <summary>Remito R.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Core.DocumentTypeARCAEnum.CUIT">
+            <summary>C.U.I.T. — Clave Única de Identificación Tributaria.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Core.DocumentTypeARCAEnum.DNI">
+            <summary>D.N.I. — Documento Nacional de Identidad.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Core.DocumentTypeARCAEnum.SIN_IDENTIFICAR">
+            <summary>Sin identificar (consumidor final sin documento).</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Core.VATConditionARCAEnum.CONSUMIDOR_FINAL">
+            <summary>Consumidor final — sin responsabilidad de IVA.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Core.VATConditionARCAEnum.MONOTRIBUTO">
+            <summary>Monotributista.</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Core.VATConditionARCAEnum.RESPONSABLE_INSCRIPTO">
+            <summary>Responsable Inscripto en IVA.</summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Core.LoginTicketRequest">
+            <summary>
+            Internal WSAA request state. Not part of the public API.
+            Estado interno del request al WSAA. No es parte de la API pública.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Core.ICertificateService">
+            <summary>
+            Handles X.509 certificate loading and PKCS#7 message signing.
+            Maneja la carga de certificados X.509 y la firma PKCS#7 de mensajes.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Core.ICertificateService.SignMessage(System.Byte[],System.Security.Cryptography.X509Certificates.X509Certificate2)">
+            <summary>
+            Signs a byte array with the given certificate (PKCS#7 / CMS).
+            Firma un array de bytes con el certificado dado (PKCS#7 / CMS).
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Core.ICertificateService.LoadCertificate(System.String,System.String)">
+            <summary>
+            Loads an X.509 certificate (with private key) from a .pfx/.p12 file.
+            Carga un certificado X.509 (con clave privada) desde un archivo .pfx/.p12.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Core.ILoginTicketService">
+            <summary>
+            Obtains a Login Ticket (token + sign) from the ARCA WSAA service.
+            Obtiene un Login Ticket (token + sign) del servicio WSAA de ARCA.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Core.ILoginTicketService.GetLoginTicketAsync(System.String,System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Authenticates against WSAA and returns a signed login ticket.
+            Autentica contra el WSAA y retorna un ticket de sesión firmado.
+            </summary>
+            <param name="service">Target ARCA service name (e.g. "wsfe", "wsfex").</param>
+            <param name="wsaaUrl">WSAA endpoint URL.</param>
+            <param name="certificatePath">Absolute path to the signing .pfx/.p12 certificate.</param>
+            <param name="certificatePassword">Certificate password, or null if none.</param>
+            <param name="ct">Cancellation token.</param>
+        </member>
+        <member name="T:ElRoso.ARCA.Core.ARCAAuthException">
+            <summary>
+            Thrown when WSAA authentication fails (certificate, signing, or token retrieval).
+            Se lanza cuando falla la autenticación contra el WSAA.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Core.ARCAServiceException">
+            <summary>
+            Thrown when ARCA web services (WSFEv1, WSFEXv1, Padron) return an error code.
+            Se lanza cuando los web services de ARCA devuelven un código de error.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Core.ARCAValidationException">
+            <summary>
+            Thrown when the billing document request fails local FluentValidation rules.
+            Se lanza cuando el request no pasa las validaciones locales.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Core.ARCAOptions">
+            <summary>
+            Configuration options for the ARCA (ex-AFIP) client library.
+            Opciones de configuración para la librería cliente de ARCA (ex-AFIP).
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Core.ARCAOptions.IsProduction">
+            <summary>
+            Use production endpoints. Default: false (homologation/testing).
+            Usar endpoints de producción. Por defecto: false (homologación).
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Core.ARCAOptions.CertificatePath">
+            <summary>
+            Absolute path to the X.509 certificate file (.pfx or .p12).
+            Ruta absoluta al archivo de certificado X.509 (.pfx o .p12).
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Core.ARCAOptions.CertificatePassword">
+            <summary>
+            Certificate password. Null if the certificate has no password.
+            Contraseña del certificado. Null si no tiene contraseña.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Core.ARCAOptions.TokenCacheDirectory">
+            <summary>
+            Directory where login ticket cache files are stored.
+            Defaults to the system temp folder.
+            Directorio donde se almacenan los archivos de caché de tokens.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Core.ARCAOptions.SoapTimeoutSeconds">
+            <summary>
+            SOAP timeout in seconds. Default: 30.
+            Timeout de las llamadas SOAP en segundos.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Core.ARCAOptions.WsccomuUrl">
+            <summary>
+            EN: WSCComu (e-Ventanilla / DFE) endpoint URL. Defaults to the homologation endpoint.
+            ARCA has not publicly listed the production URL for this service — set this property
+            explicitly to the production URL when you go live. Contact webservices-desa@arca.gob.ar
+            if unsure.
+            ES: URL del WSCComu. Default es homologación. ARCA no publica la URL de producción —
+            configurar explícitamente al pasar a producción.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Core.LoginTicketService.GetNetworkTimeAsync(System.Threading.CancellationToken)">
+            <summary>
+            Fetches current time from ARCA's NTP server, cached for 60 s.
+            Falls back to system clock if NTP is unreachable — WSAA tolerates ±10 min.
+            Obtiene la hora del servidor NTP de ARCA, cacheada por 60 s.
+            Usa el reloj del sistema como fallback — WSAA tolera ±10 min de desvío.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.ARCAServiceCollectionExtensions.AddARCAClient(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{ElRoso.ARCA.Core.ARCAOptions})">
             <summary>
             Registers all ARCA (ex-AFIP) services into the DI container.
             Registra todos los servicios de ARCA (ex-AFIP) en el contenedor de DI.
@@ -58,139 +339,64 @@
             });
             </example>
         </member>
-        <member name="T:ElRoso.ARCA.Domains.Enums.AuthorizationModeARCAEnum">
+        <member name="T:ElRoso.ARCA.Read.AuthorizationModeARCAEnum">
             <summary>
             EN: Type of ARCA authorization code being verified.
             ES: Tipo de código de autorización de ARCA que se valida.
             </summary>
         </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.AuthorizationModeARCAEnum.CAE">
+        <member name="F:ElRoso.ARCA.Read.AuthorizationModeARCAEnum.CAE">
             <summary>Código de Autorización Electrónico (default — facturación electrónica).</summary>
         </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.AuthorizationModeARCAEnum.CAI">
+        <member name="F:ElRoso.ARCA.Read.AuthorizationModeARCAEnum.CAI">
             <summary>Código de Autorización de Impresión (controlador fiscal / manual).</summary>
         </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.AuthorizationModeARCAEnum.CAEA">
+        <member name="F:ElRoso.ARCA.Read.AuthorizationModeARCAEnum.CAEA">
             <summary>Código de Autorización Electrónico Anticipado.</summary>
         </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.FA">
-            <summary>Factura A.</summary>
-        </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.NDA">
-            <summary>Nota de Débito A.</summary>
-        </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.NCA">
-            <summary>Nota de Crédito A.</summary>
-        </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.FB">
-            <summary>Factura B.</summary>
-        </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.NDB">
-            <summary>Nota de Débito B.</summary>
-        </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.NCB">
-            <summary>Nota de Crédito B.</summary>
-        </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.FC">
-            <summary>Factura C.</summary>
-        </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.NDC">
-            <summary>Nota de Débito C.</summary>
-        </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.NCC">
-            <summary>Nota de Crédito C.</summary>
-        </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.InvoiceExport">
-            <summary>Factura de Exportación.</summary>
-        </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.DebitNoteExport">
-            <summary>Nota de Débito por Operaciones con el Exterior.</summary>
-        </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.CreditNoteExport">
-            <summary>Nota de Crédito por Operaciones con el Exterior.</summary>
-        </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.Remittances">
-            <summary>Remito R.</summary>
-        </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.ConceptTypeARCAEnum.Products">
-            <summary>Productos.</summary>
-        </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.ConceptTypeARCAEnum.Services">
-            <summary>Servicios.</summary>
-        </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.ConceptTypeARCAEnum.Otros">
-            <summary>Otros (productos y servicios).</summary>
-        </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.DocumentTypeARCAEnum.CUIT">
-            <summary>C.U.I.T. — Clave Única de Identificación Tributaria.</summary>
-        </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.DocumentTypeARCAEnum.DNI">
-            <summary>D.N.I. — Documento Nacional de Identidad.</summary>
-        </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.DocumentTypeARCAEnum.SIN_IDENTIFICAR">
-            <summary>Sin identificar (consumidor final sin documento).</summary>
-        </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.VATConditionARCAEnum.CONSUMIDOR_FINAL">
-            <summary>Consumidor final — sin responsabilidad de IVA.</summary>
-        </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.VATConditionARCAEnum.MONOTRIBUTO">
-            <summary>Monotributista.</summary>
-        </member>
-        <member name="F:ElRoso.ARCA.Domains.Enums.VATConditionARCAEnum.RESPONSABLE_INSCRIPTO">
-            <summary>Responsable Inscripto en IVA.</summary>
-        </member>
-        <member name="P:ElRoso.ARCA.Domains.Requests.BillingDocumentNumberingRequest.Version">
-            <summary>QR code schema version. / Versión del esquema del QR.</summary>
-        </member>
-        <member name="T:ElRoso.ARCA.Domains.Requests.InvoiceVerificationRequest">
+        <member name="T:ElRoso.ARCA.Read.InvoiceVerificationRequest">
             <summary>
             EN: Request to verify a received invoice against ARCA (WSCDC / Constatación de Comprobantes).
             ES: Request para validar una factura recibida contra ARCA (WSCDC).
             </summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Requests.InvoiceVerificationRequest.IssuingCompany">
+        <member name="P:ElRoso.ARCA.Read.InvoiceVerificationRequest.IssuingCompany">
             <summary>Issuing company's CUIT. / CUIT del emisor.</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Requests.InvoiceVerificationRequest.Receiver">
+        <member name="P:ElRoso.ARCA.Read.InvoiceVerificationRequest.Receiver">
             <summary>Receiver's CUIT/DNI (optional). / CUIT/DNI del receptor (opcional).</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Requests.InvoiceVerificationRequest.BillingDocumentType">
+        <member name="P:ElRoso.ARCA.Read.InvoiceVerificationRequest.BillingDocumentType">
             <summary>Voucher type (FA, FB, FC, etc). / Tipo de comprobante.</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Requests.InvoiceVerificationRequest.BillingDocumentBookPrefix">
+        <member name="P:ElRoso.ARCA.Read.InvoiceVerificationRequest.BillingDocumentBookPrefix">
             <summary>Punto de venta (book prefix).</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Requests.InvoiceVerificationRequest.BillingDocumentNumber">
+        <member name="P:ElRoso.ARCA.Read.InvoiceVerificationRequest.BillingDocumentNumber">
             <summary>Voucher number (Cbte_nro). / Número de comprobante.</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Requests.InvoiceVerificationRequest.BillingDocumentDate">
+        <member name="P:ElRoso.ARCA.Read.InvoiceVerificationRequest.BillingDocumentDate">
             <summary>Voucher date. / Fecha del comprobante.</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Requests.InvoiceVerificationRequest.TotalAmount">
+        <member name="P:ElRoso.ARCA.Read.InvoiceVerificationRequest.TotalAmount">
             <summary>Total amount on the voucher. / Importe total del comprobante.</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Requests.InvoiceVerificationRequest.AuthorizationCode">
+        <member name="P:ElRoso.ARCA.Read.InvoiceVerificationRequest.AuthorizationCode">
             <summary>Authorization code (CAE/CAI/CAEA) printed on the voucher. / Código de autorización impreso en el comprobante.</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Requests.InvoiceVerificationRequest.AuthorizationMode">
+        <member name="P:ElRoso.ARCA.Read.InvoiceVerificationRequest.AuthorizationMode">
             <summary>Type of authorization being validated. Default: CAE. / Tipo de autorización a validar. Default: CAE.</summary>
         </member>
-        <member name="T:ElRoso.ARCA.Domains.Requests.LoginTicketRequest">
-            <summary>
-            Internal WSAA request state. Not part of the public API.
-            Estado interno del request al WSAA. No es parte de la API pública.
-            </summary>
-        </member>
-        <member name="T:ElRoso.ARCA.Domains.Requests.MailboxConsumeRequest">
+        <member name="T:ElRoso.ARCA.Read.MailboxConsumeRequest">
             <summary>
             EN: Request to consume (read + mark as read) a notification from ARCA's e-Ventanilla.
             ES: Request para consumir (leer + marcar como leída) una notificación del e-Ventanilla.
             </summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Requests.MailboxConsumeRequest.MessageId">
+        <member name="P:ElRoso.ARCA.Read.MailboxConsumeRequest.MessageId">
             <summary>ID of the message to consume (from MailboxMessageSummary.Id).</summary>
         </member>
-        <member name="T:ElRoso.ARCA.Domains.Requests.MailboxQueryRequest">
+        <member name="T:ElRoso.ARCA.Read.MailboxQueryRequest">
             <summary>
             EN: Request to query notifications from ARCA's e-Ventanilla (WSCComu).
             Supports filtering by state, date range, system, attachment flag; paginated.
@@ -198,133 +404,88 @@
             Soporta filtros por estado, rango de fechas, sistema, adjunto; paginado.
             </summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Requests.MailboxQueryRequest.IssuingCompany">
+        <member name="P:ElRoso.ARCA.Read.MailboxQueryRequest.IssuingCompany">
             <summary>Issuing company being queried (your CUIT or the delegating CUIT).</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Requests.MailboxQueryRequest.StateId">
+        <member name="P:ElRoso.ARCA.Read.MailboxQueryRequest.StateId">
             <summary>State id from ARCA (use null for all). / ID de estado (null para todos).</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Requests.MailboxQueryRequest.FromDate">
+        <member name="P:ElRoso.ARCA.Read.MailboxQueryRequest.FromDate">
             <summary>Filter by date range — from. / Filtro fecha desde.</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Requests.MailboxQueryRequest.ToDate">
+        <member name="P:ElRoso.ARCA.Read.MailboxQueryRequest.ToDate">
             <summary>Filter by date range — to. / Filtro fecha hasta.</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Requests.MailboxQueryRequest.HasAttachment">
+        <member name="P:ElRoso.ARCA.Read.MailboxQueryRequest.HasAttachment">
             <summary>Filter to messages that have attachments. / Filtra mensajes con adjunto.</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Requests.MailboxQueryRequest.PublishingSystemId">
+        <member name="P:ElRoso.ARCA.Read.MailboxQueryRequest.PublishingSystemId">
             <summary>Filter by publishing system id. / Filtra por ID del sistema publicador.</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Requests.MailboxQueryRequest.Page">
+        <member name="P:ElRoso.ARCA.Read.MailboxQueryRequest.Page">
             <summary>1-based page number. Default 1. / Número de página (base 1). Default 1.</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Requests.MailboxQueryRequest.PageSize">
+        <member name="P:ElRoso.ARCA.Read.MailboxQueryRequest.PageSize">
             <summary>Items per page (max varies per service). / Items por página.</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Requests.MailboxQueryRequest.Reference1">
+        <member name="P:ElRoso.ARCA.Read.MailboxQueryRequest.Reference1">
             <summary>Optional reference filter #1. / Filtro de referencia opcional #1.</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Requests.MailboxQueryRequest.Reference2">
+        <member name="P:ElRoso.ARCA.Read.MailboxQueryRequest.Reference2">
             <summary>Optional reference filter #2. / Filtro de referencia opcional #2.</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Responses.BillingDocumentNumberingResponse.Errors">
-            <summary>
-            Business errors returned by ARCA (observaciones, códigos de error).
-            Errores de negocio devueltos por ARCA.
-            </summary>
-        </member>
-        <member name="M:ElRoso.ARCA.Domains.Responses.BillingDocumentNumberingResponse.QRCode">
-            <summary>
-            Generates the ARCA QR code URL for printing on the invoice.
-            Genera la URL del código QR de ARCA para imprimir en el comprobante.
-            </summary>
-        </member>
-        <member name="T:ElRoso.ARCA.Domains.Responses.InvoiceVerificationResponse">
+        <member name="T:ElRoso.ARCA.Read.InvoiceVerificationResponse">
             <summary>
             EN: Result of validating a received voucher with ARCA WSCDC.
             ES: Resultado de validar un comprobante recibido contra WSCDC de ARCA.
             </summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Responses.InvoiceVerificationResponse.IsAuthorized">
+        <member name="P:ElRoso.ARCA.Read.InvoiceVerificationResponse.IsAuthorized">
             <summary>True when ARCA confirms the voucher is authorized (Resultado == "A").</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Responses.InvoiceVerificationResponse.Resultado">
+        <member name="P:ElRoso.ARCA.Read.InvoiceVerificationResponse.Resultado">
             <summary>Raw ARCA result code: "A" approved, "R" rejected. / Código crudo: "A" aprobado, "R" rechazado.</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Responses.InvoiceVerificationResponse.ProcessedDate">
+        <member name="P:ElRoso.ARCA.Read.InvoiceVerificationResponse.ProcessedDate">
             <summary>Date when ARCA processed the verification. / Fecha en que ARCA procesó la verificación.</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Responses.InvoiceVerificationResponse.Observations">
+        <member name="P:ElRoso.ARCA.Read.InvoiceVerificationResponse.Observations">
             <summary>Observations returned by ARCA (rejection reasons). / Observaciones (motivos de rechazo).</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Responses.InvoiceVerificationResponse.Errors">
+        <member name="P:ElRoso.ARCA.Read.InvoiceVerificationResponse.Errors">
             <summary>Errors returned by ARCA (request-level problems). / Errores devueltos por ARCA.</summary>
         </member>
-        <member name="T:ElRoso.ARCA.Domains.Responses.MailboxConsumeResponse">
+        <member name="T:ElRoso.ARCA.Read.MailboxConsumeResponse">
             <summary>
             EN: Full message obtained after consuming a notification (marks it as read).
             ES: Mensaje completo obtenido al consumir una notificación (la marca como leída).
             </summary>
         </member>
-        <member name="T:ElRoso.ARCA.Domains.Responses.MailboxMessage">
+        <member name="T:ElRoso.ARCA.Read.MailboxMessage">
             <summary>
             EN: Full notification with body and attachment metadata.
             ES: Notificación completa con cuerpo y metadata de adjuntos.
             </summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Responses.MailboxMessage.Body">
+        <member name="P:ElRoso.ARCA.Read.MailboxMessage.Body">
             <summary>Full message body (HTML or plain text). / Cuerpo completo del mensaje.</summary>
         </member>
-        <member name="P:ElRoso.ARCA.Domains.Responses.MailboxAttachment.Content">
+        <member name="P:ElRoso.ARCA.Read.MailboxAttachment.Content">
             <summary>Attachment bytes (base64-decoded). / Bytes del adjunto (base64-decodificado).</summary>
         </member>
-        <member name="T:ElRoso.ARCA.Domains.Responses.MailboxQueryResponse">
+        <member name="T:ElRoso.ARCA.Read.MailboxQueryResponse">
             <summary>
             EN: Paginated list of notification summaries from ARCA's e-Ventanilla.
             ES: Listado paginado de resúmenes de notificaciones del e-Ventanilla.
             </summary>
         </member>
-        <member name="T:ElRoso.ARCA.Domains.Responses.MailboxMessageSummary">
+        <member name="T:ElRoso.ARCA.Read.MailboxMessageSummary">
             <summary>
             EN: Notification summary (no body / attachments). Use ConsumeAsync to get the full message.
             ES: Resumen de notificación (sin cuerpo ni adjuntos). Usar ConsumeAsync para el mensaje completo.
             </summary>
         </member>
-        <member name="T:ElRoso.ARCA.Domains.Services.IBillingDocumentNumberingService">
-            <summary>
-            Requests a CAE (Electronic Authorization Code) from ARCA for a billing document.
-            Solicita un CAE (Código de Autorización Electrónico) a ARCA para un comprobante.
-            </summary>
-        </member>
-        <member name="M:ElRoso.ARCA.Domains.Services.IBillingDocumentNumberingService.AuthorizeAsync(ElRoso.ARCA.Domains.Requests.BillingDocumentNumberingRequest,System.Threading.CancellationToken)">
-            <summary>
-            Validates the request and obtains a CAE from ARCA.
-            Valida el request y obtiene un CAE de ARCA.
-            </summary>
-            <param name="request">Billing document to authorize.</param>
-            <param name="ct">Cancellation token.</param>
-            <returns>Response with CAE and document number, or error list.</returns>
-        </member>
-        <member name="T:ElRoso.ARCA.Domains.Services.ICertificateService">
-            <summary>
-            Handles X.509 certificate loading and PKCS#7 message signing.
-            Maneja la carga de certificados X.509 y la firma PKCS#7 de mensajes.
-            </summary>
-        </member>
-        <member name="M:ElRoso.ARCA.Domains.Services.ICertificateService.SignMessage(System.Byte[],System.Security.Cryptography.X509Certificates.X509Certificate2)">
-            <summary>
-            Signs a byte array with the given certificate (PKCS#7 / CMS).
-            Firma un array de bytes con el certificado dado (PKCS#7 / CMS).
-            </summary>
-        </member>
-        <member name="M:ElRoso.ARCA.Domains.Services.ICertificateService.LoadCertificate(System.String,System.String)">
-            <summary>
-            Loads an X.509 certificate (with private key) from a .pfx/.p12 file.
-            Carga un certificado X.509 (con clave privada) desde un archivo .pfx/.p12.
-            </summary>
-        </member>
-        <member name="T:ElRoso.ARCA.Domains.Services.IElectronicMailboxService">
+        <member name="T:ElRoso.ARCA.Read.IElectronicMailboxService">
             <summary>
             EN: Reads notifications from ARCA's e-Ventanilla (Domicilio Fiscal Electrónico / DFE).
             Replaces the need to log in to the ARCA portal to check the inbox.
@@ -332,19 +493,19 @@
             Reemplaza la necesidad de loguearse al portal de ARCA para chequear la bandeja.
             </summary>
         </member>
-        <member name="M:ElRoso.ARCA.Domains.Services.IElectronicMailboxService.ListAsync(ElRoso.ARCA.Domains.Requests.MailboxQueryRequest,System.Threading.CancellationToken)">
+        <member name="M:ElRoso.ARCA.Read.IElectronicMailboxService.ListAsync(ElRoso.ARCA.Read.MailboxQueryRequest,System.Threading.CancellationToken)">
             <summary>
             EN: List notifications matching the given filter. Paginated.
             ES: Lista notificaciones que matcheen el filtro. Paginado.
             </summary>
         </member>
-        <member name="M:ElRoso.ARCA.Domains.Services.IElectronicMailboxService.ConsumeAsync(ElRoso.ARCA.Domains.Requests.MailboxConsumeRequest,System.Threading.CancellationToken)">
+        <member name="M:ElRoso.ARCA.Read.IElectronicMailboxService.ConsumeAsync(ElRoso.ARCA.Read.MailboxConsumeRequest,System.Threading.CancellationToken)">
             <summary>
             EN: Consume (read + mark as read) a notification. Returns the full message with body and attachments.
             ES: Consume (lee + marca como leída) una notificación. Devuelve el mensaje completo con cuerpo y adjuntos.
             </summary>
         </member>
-        <member name="T:ElRoso.ARCA.Domains.Services.IInvoiceVerificationService">
+        <member name="T:ElRoso.ARCA.Read.IInvoiceVerificationService">
             <summary>
             EN: Verifies received vouchers against ARCA (WSCDC). Useful when you receive an electronic
             invoice from a vendor and want to confirm the CAE/CAI/CAEA is real and active.
@@ -352,189 +513,28 @@
             electrónica de un proveedor y querés confirmar que el CAE/CAI/CAEA es real y está vigente.
             </summary>
         </member>
-        <member name="T:ElRoso.ARCA.Domains.Services.ILoginTicketService">
-            <summary>
-            Obtains a Login Ticket (token + sign) from the ARCA WSAA service.
-            Obtiene un Login Ticket (token + sign) del servicio WSAA de ARCA.
-            </summary>
-        </member>
-        <member name="M:ElRoso.ARCA.Domains.Services.ILoginTicketService.GetLoginTicketAsync(System.String,System.String,System.String,System.String,System.Threading.CancellationToken)">
-            <summary>
-            Authenticates against WSAA and returns a signed login ticket.
-            Autentica contra el WSAA y retorna un ticket de sesión firmado.
-            </summary>
-            <param name="service">Target ARCA service name (e.g. "wsfe", "wsfex").</param>
-            <param name="wsaaUrl">WSAA endpoint URL.</param>
-            <param name="certificatePath">Absolute path to the signing .pfx/.p12 certificate.</param>
-            <param name="certificatePassword">Certificate password, or null if none.</param>
-            <param name="ct">Cancellation token.</param>
-        </member>
-        <member name="T:ElRoso.ARCA.Exceptions.ARCAAuthException">
-            <summary>
-            Thrown when WSAA authentication fails (certificate, signing, or token retrieval).
-            Se lanza cuando falla la autenticación contra el WSAA.
-            </summary>
-        </member>
-        <member name="T:ElRoso.ARCA.Exceptions.ARCAServiceException">
-            <summary>
-            Thrown when ARCA web services (WSFEv1, WSFEXv1, Padron) return an error code.
-            Se lanza cuando los web services de ARCA devuelven un código de error.
-            </summary>
-        </member>
-        <member name="T:ElRoso.ARCA.Exceptions.ARCAValidationException">
-            <summary>
-            Thrown when the billing document request fails local FluentValidation rules.
-            Se lanza cuando el request no pasa las validaciones locales.
-            </summary>
-        </member>
-        <member name="T:ElRoso.ARCA.Options.ARCAOptions">
-            <summary>
-            Configuration options for the ARCA (ex-AFIP) client library.
-            Opciones de configuración para la librería cliente de ARCA (ex-AFIP).
-            </summary>
-        </member>
-        <member name="P:ElRoso.ARCA.Options.ARCAOptions.IsProduction">
-            <summary>
-            Use production endpoints. Default: false (homologation/testing).
-            Usar endpoints de producción. Por defecto: false (homologación).
-            </summary>
-        </member>
-        <member name="P:ElRoso.ARCA.Options.ARCAOptions.CertificatePath">
-            <summary>
-            Absolute path to the X.509 certificate file (.pfx or .p12).
-            Ruta absoluta al archivo de certificado X.509 (.pfx o .p12).
-            </summary>
-        </member>
-        <member name="P:ElRoso.ARCA.Options.ARCAOptions.CertificatePassword">
-            <summary>
-            Certificate password. Null if the certificate has no password.
-            Contraseña del certificado. Null si no tiene contraseña.
-            </summary>
-        </member>
-        <member name="P:ElRoso.ARCA.Options.ARCAOptions.TokenCacheDirectory">
-            <summary>
-            Directory where login ticket cache files are stored.
-            Defaults to the system temp folder.
-            Directorio donde se almacenan los archivos de caché de tokens.
-            </summary>
-        </member>
-        <member name="P:ElRoso.ARCA.Options.ARCAOptions.SoapTimeoutSeconds">
-            <summary>
-            SOAP timeout in seconds. Default: 30.
-            Timeout de las llamadas SOAP en segundos.
-            </summary>
-        </member>
-        <member name="P:ElRoso.ARCA.Options.ARCAOptions.WsccomuUrl">
-            <summary>
-            EN: WSCComu (e-Ventanilla / DFE) endpoint URL. Defaults to the homologation endpoint.
-            ARCA has not publicly listed the production URL for this service — set this property
-            explicitly to the production URL when you go live. Contact webservices-desa@arca.gob.ar
-            if unsure.
-            ES: URL del WSCComu. Default es homologación. ARCA no publica la URL de producción —
-            configurar explícitamente al pasar a producción.
-            </summary>
-        </member>
-        <member name="M:ElRoso.ARCA.Services.LoginTicketService.GetNetworkTimeAsync(System.Threading.CancellationToken)">
-            <summary>
-            Fetches current time from ARCA's NTP server, cached for 60 s.
-            Falls back to system clock if NTP is unreachable — WSAA tolerates ±10 min.
-            Obtiene la hora del servidor NTP de ARCA, cacheada por 60 s.
-            Usa el reloj del sistema como fallback — WSAA tolera ±10 min de desvío.
-            </summary>
-        </member>
-        <member name="T:ElRoso.ARCA.Services.Soap.IElectronicMailboxOperations">
+        <member name="T:ElRoso.ARCA.Read.IElectronicMailboxOperations">
             <summary>
             EN: Thin wrapper over the ARCA WSCComu SOAP client (e-Ventanilla / DFE notifications).
             ES: Wrapper fino sobre el cliente SOAP del WSCComu de ARCA.
             </summary>
         </member>
-        <member name="T:ElRoso.ARCA.Services.Soap.IInvoiceVerificationOperations">
+        <member name="T:ElRoso.ARCA.Read.IInvoiceVerificationOperations">
             <summary>
             EN: Thin wrapper over the ARCA WSCDC SOAP client (Constatación de Comprobantes).
             ES: Wrapper fino sobre el cliente SOAP del WSCDC de ARCA.
             </summary>
         </member>
-        <member name="T:ElRoso.ARCA.Services.Soap.InvoiceVerificationOperationResult">
+        <member name="T:ElRoso.ARCA.Read.InvoiceVerificationOperationResult">
             <summary>
             EN: POCO result of a WSCDC verification — hides WCF types from the consumer.
             ES: Resultado POCO de una verificación WSCDC — oculta los tipos WCF del consumidor.
             </summary>
         </member>
-        <member name="M:ElRoso.ARCA.Services.Soap.InvoiceVerificationOperations.TryParseFchProceso(System.String)">
+        <member name="M:ElRoso.ARCA.Read.InvoiceVerificationOperations.TryParseFchProceso(System.String)">
             <summary>
             EN: Parses the ARCA FchProceso field. Supports both yyyyMMdd and yyyyMMddHHmmss formats.
             ES: Parsea el campo FchProceso de ARCA. Soporta yyyyMMdd y yyyyMMddHHmmss.
-            </summary>
-        </member>
-        <member name="T:ElRoso.ARCA.Services.Soap.IPadronOperations">
-            <summary>
-            EN: Thin wrapper over the ARCA Padron A5 SOAP client.
-                Exists so consumers can be unit-tested without touching the network.
-            ES: Wrapper fino sobre el cliente SOAP del Padrón A5 de ARCA.
-                Existe para que los consumidores puedan testearse sin tocar la red.
-            </summary>
-        </member>
-        <member name="T:ElRoso.ARCA.Services.Soap.PadronPersonaResult">
-            <summary>
-            EN: POCO result of a Padron query — hides WCF types from the consumer.
-            ES: Resultado POCO de una consulta al Padrón — oculta los tipos WCF del consumidor.
-            </summary>
-        </member>
-        <member name="P:ElRoso.ARCA.Services.Soap.PadronPersonaResult.Errors">
-            <summary>Errors returned by Padron, if any. / Errores devueltos por el Padrón.</summary>
-        </member>
-        <member name="P:ElRoso.ARCA.Services.Soap.PadronPersonaResult.IsMonotributo">
-            <summary>True if the client is registered as Monotributo. / True si el cliente está como Monotributo.</summary>
-        </member>
-        <member name="P:ElRoso.ARCA.Services.Soap.PadronPersonaResult.ClientName">
-            <summary>Resolved client name (razón social or apellido + nombre). / Nombre del cliente resuelto.</summary>
-        </member>
-        <member name="T:ElRoso.ARCA.Services.Soap.IWsfeOperations">
-            <summary>
-            EN: Thin wrapper over the ARCA WSFEv1 SOAP client (domestic e-invoicing).
-            ES: Wrapper fino sobre el cliente SOAP del WSFEv1 de ARCA (facturación doméstica).
-            </summary>
-        </member>
-        <member name="M:ElRoso.ARCA.Services.Soap.IWsfeOperations.GetLastNumberAsync(System.String,System.String,System.Int64,System.Int32,System.Int32,System.Threading.CancellationToken)">
-            <summary>
-            EN: Returns the last authorized document number for the given type + book.
-            ES: Devuelve el último número autorizado para el tipo + libro dados.
-            </summary>
-        </member>
-        <member name="M:ElRoso.ARCA.Services.Soap.IWsfeOperations.SolicitarCaeAsync(System.String,System.String,System.Int64,ElRoso.ARCA.Domains.Requests.BillingDocumentNumberingRequest,System.Int32,System.Threading.CancellationToken)">
-            <summary>
-            EN: Requests a CAE for one document. Returns POCO result with errors / observations / approval.
-            ES: Solicita un CAE para un documento. Devuelve resultado POCO con errores / observaciones / aprobación.
-            </summary>
-        </member>
-        <member name="T:ElRoso.ARCA.Services.Soap.WsfeCaeResult">
-            <summary>
-            EN: POCO result of a CAE request to WSFEv1 — hides WCF types from the consumer.
-            ES: Resultado POCO de una solicitud de CAE a WSFEv1 — oculta los tipos WCF del consumidor.
-            </summary>
-        </member>
-        <member name="P:ElRoso.ARCA.Services.Soap.WsfeCaeResult.IsApproved">
-            <summary>True when CAE was granted (Resultado == "A"). / True cuando el CAE fue otorgado.</summary>
-        </member>
-        <member name="P:ElRoso.ARCA.Services.Soap.WsfeCaeResult.Cae">
-            <summary>The CAE code returned by ARCA. / Código CAE devuelto por ARCA.</summary>
-        </member>
-        <member name="P:ElRoso.ARCA.Services.Soap.WsfeCaeResult.CaeExpiration">
-            <summary>CAE expiration date. / Fecha de vencimiento del CAE.</summary>
-        </member>
-        <member name="P:ElRoso.ARCA.Services.Soap.WsfeCaeResult.Errors">
-            <summary>Errors returned by WSFEv1 (header-level or detail observations on rejection).</summary>
-        </member>
-        <member name="T:ElRoso.ARCA.Services.Soap.IWsfexOperations">
-            <summary>
-            EN: Thin wrapper over the ARCA WSFEXv1 SOAP client (export e-invoicing).
-            ES: Wrapper fino sobre el cliente SOAP del WSFEXv1 de ARCA (facturación exportación).
-            </summary>
-        </member>
-        <member name="T:ElRoso.ARCA.Services.Soap.WsfexCaeResult">
-            <summary>
-            EN: POCO result of an Authorize request to WSFEXv1.
-            ES: Resultado POCO de una solicitud Authorize a WSFEXv1.
             </summary>
         </member>
         <member name="T:Padron.SRValidationException">
@@ -952,249 +952,6 @@
             <remarks/>
         </member>
         <member name="P:Padron.dummyReturn.dbserver">
-            <remarks/>
-        </member>
-        <member name="T:WSCComu.VentanillaWSFault">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.VentanillaWSFault.faultCode">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.VentanillaWSFault.faultMessage">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.VentanillaWSFault.category">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.VentanillaWSFault.possibleSolutions">
-            <remarks/>
-        </member>
-        <member name="T:WSCComu.adjunto">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.adjunto.filename">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.adjunto.content">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.adjunto.compressed">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.adjunto.compressedSpecified">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.adjunto.signed">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.adjunto.signedSpecified">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.adjunto.encrypted">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.adjunto.encryptedSpecified">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.adjunto.processed">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.adjunto.processedSpecified">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.adjunto.public">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.adjunto.publicSpecified">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.adjunto.md5">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.adjunto.contentSize">
-            <remarks/>
-        </member>
-        <member name="T:WSCComu.ComunicacionSimplificada">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.ComunicacionSimplificada.idComunicacion">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.ComunicacionSimplificada.cuitDestinatario">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.ComunicacionSimplificada.fechaPublicacion">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.ComunicacionSimplificada.fechaVencimiento">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.ComunicacionSimplificada.sistemaPublicador">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.ComunicacionSimplificada.sistemaPublicadorDesc">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.ComunicacionSimplificada.estado">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.ComunicacionSimplificada.estadoDesc">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.ComunicacionSimplificada.asunto">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.ComunicacionSimplificada.prioridad">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.ComunicacionSimplificada.tieneAdjunto">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.ComunicacionSimplificada.referencia1">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.ComunicacionSimplificada.referencia2">
-            <remarks/>
-        </member>
-        <member name="T:WSCComu.Comunicacion">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Comunicacion.mensaje">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Comunicacion.tiempoDeVida">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Comunicacion.adjuntos">
-            <remarks/>
-        </member>
-        <member name="T:WSCComu.RespuestaPaginada">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.RespuestaPaginada.pagina">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.RespuestaPaginada.totalPaginas">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.RespuestaPaginada.itemsPorPagina">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.RespuestaPaginada.totalItems">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.RespuestaPaginada.items">
-            <remarks/>
-        </member>
-        <member name="T:WSCComu.Filter">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Filter.estado">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Filter.estadoSpecified">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Filter.fechaDesde">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Filter.fechaHasta">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Filter.comunicacionIdDesde">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Filter.comunicacionIdDesdeSpecified">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Filter.comunicacionIdHasta">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Filter.comunicacionIdHastaSpecified">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Filter.tieneAdjunto">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Filter.tieneAdjuntoSpecified">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Filter.sistemaPublicadorId">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Filter.sistemaPublicadorIdSpecified">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Filter.pagina">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Filter.resultadosPorPagina">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Filter.resultadosPorPaginaSpecified">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Filter.referencia1">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Filter.referencia2">
-            <remarks/>
-        </member>
-        <member name="T:WSCComu.AuthRequest">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.AuthRequest.token">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.AuthRequest.sign">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.AuthRequest.cuitRepresentada">
-            <remarks/>
-        </member>
-        <member name="T:WSCComu.Sistema">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Sistema.id">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Sistema.descripcion">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Sistema.certCNs">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Sistema.subservicios">
-            <remarks/>
-        </member>
-        <member name="T:WSCComu.Subservicio">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Subservicio.nombre">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Subservicio.descripcion">
-            <remarks/>
-        </member>
-        <member name="T:WSCComu.DummyResult">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.DummyResult.dbserver">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.DummyResult.appserver">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.DummyResult.authserver">
-            <remarks/>
-        </member>
-        <member name="T:WSCComu.Estado">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Estado.id">
-            <remarks/>
-        </member>
-        <member name="P:WSCComu.Estado.descripcion">
             <remarks/>
         </member>
         <member name="T:WSFEXv1.ClsFEXAuthRequest">
@@ -1966,6 +1723,249 @@
             <remarks/>
         </member>
         <member name="P:WSFEXv1.ClsFEXRequest.Actividades">
+            <remarks/>
+        </member>
+        <member name="T:WSCComu.VentanillaWSFault">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.VentanillaWSFault.faultCode">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.VentanillaWSFault.faultMessage">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.VentanillaWSFault.category">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.VentanillaWSFault.possibleSolutions">
+            <remarks/>
+        </member>
+        <member name="T:WSCComu.adjunto">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.filename">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.content">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.compressed">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.compressedSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.signed">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.signedSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.encrypted">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.encryptedSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.processed">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.processedSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.public">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.publicSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.md5">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.adjunto.contentSize">
+            <remarks/>
+        </member>
+        <member name="T:WSCComu.ComunicacionSimplificada">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.idComunicacion">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.cuitDestinatario">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.fechaPublicacion">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.fechaVencimiento">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.sistemaPublicador">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.sistemaPublicadorDesc">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.estado">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.estadoDesc">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.asunto">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.prioridad">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.tieneAdjunto">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.referencia1">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.ComunicacionSimplificada.referencia2">
+            <remarks/>
+        </member>
+        <member name="T:WSCComu.Comunicacion">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Comunicacion.mensaje">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Comunicacion.tiempoDeVida">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Comunicacion.adjuntos">
+            <remarks/>
+        </member>
+        <member name="T:WSCComu.RespuestaPaginada">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.RespuestaPaginada.pagina">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.RespuestaPaginada.totalPaginas">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.RespuestaPaginada.itemsPorPagina">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.RespuestaPaginada.totalItems">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.RespuestaPaginada.items">
+            <remarks/>
+        </member>
+        <member name="T:WSCComu.Filter">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.estado">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.estadoSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.fechaDesde">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.fechaHasta">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.comunicacionIdDesde">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.comunicacionIdDesdeSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.comunicacionIdHasta">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.comunicacionIdHastaSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.tieneAdjunto">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.tieneAdjuntoSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.sistemaPublicadorId">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.sistemaPublicadorIdSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.pagina">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.resultadosPorPagina">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.resultadosPorPaginaSpecified">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.referencia1">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Filter.referencia2">
+            <remarks/>
+        </member>
+        <member name="T:WSCComu.AuthRequest">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.AuthRequest.token">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.AuthRequest.sign">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.AuthRequest.cuitRepresentada">
+            <remarks/>
+        </member>
+        <member name="T:WSCComu.Sistema">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Sistema.id">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Sistema.descripcion">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Sistema.certCNs">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Sistema.subservicios">
+            <remarks/>
+        </member>
+        <member name="T:WSCComu.Subservicio">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Subservicio.nombre">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Subservicio.descripcion">
+            <remarks/>
+        </member>
+        <member name="T:WSCComu.DummyResult">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.DummyResult.dbserver">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.DummyResult.appserver">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.DummyResult.authserver">
+            <remarks/>
+        </member>
+        <member name="T:WSCComu.Estado">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Estado.id">
+            <remarks/>
+        </member>
+        <member name="P:WSCComu.Estado.descripcion">
             <remarks/>
         </member>
     </members>

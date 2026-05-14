@@ -6,6 +6,84 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [Unreleased]
 
+## [2.0.0] — 2026-05-14
+
+🧱 **Modular refactor** — la API pública se separa en tres sub-namespaces por área funcional. **Breaking change** en el namespace de cada tipo. La funcionalidad es idéntica.
+
+### Breaking changes
+
+Los tipos públicos se reorganizaron en tres sub-namespaces. **El comportamiento es idéntico** — solo cambia el `using`.
+
+| Antes | Ahora |
+|-------|-------|
+| `ElRoso.ARCA.Caching.*` | `ElRoso.ARCA.Core` |
+| `ElRoso.ARCA.Commons.*` | `ElRoso.ARCA.Billing` |
+| `ElRoso.ARCA.Exceptions.*` | `ElRoso.ARCA.Core` |
+| `ElRoso.ARCA.Options.*` | `ElRoso.ARCA.Core` |
+| `ElRoso.ARCA.Domains.Enums.DocumentTypeARCAEnum` | `ElRoso.ARCA.Core` |
+| `ElRoso.ARCA.Domains.Enums.VATConditionARCAEnum` | `ElRoso.ARCA.Core` |
+| `ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum` | `ElRoso.ARCA.Core` |
+| `ElRoso.ARCA.Domains.Enums.ConceptTypeARCAEnum` | `ElRoso.ARCA.Billing` |
+| `ElRoso.ARCA.Domains.Enums.AuthorizationModeARCAEnum` | `ElRoso.ARCA.Read` |
+| `ElRoso.ARCA.Domains.Requests.{Issuing,Client}Request` | `ElRoso.ARCA.Core` |
+| `ElRoso.ARCA.Domains.Requests.BillingDocument*` | `ElRoso.ARCA.Billing` |
+| `ElRoso.ARCA.Domains.Requests.ItemRequest` | `ElRoso.ARCA.Billing` |
+| `ElRoso.ARCA.Domains.Requests.InvoiceVerification*` | `ElRoso.ARCA.Read` |
+| `ElRoso.ARCA.Domains.Requests.Mailbox*` | `ElRoso.ARCA.Read` |
+| `ElRoso.ARCA.Domains.Responses.LoginTicketResponse` | `ElRoso.ARCA.Core` |
+| `ElRoso.ARCA.Domains.Responses.BillingDocumentNumberingResponse` | `ElRoso.ARCA.Billing` |
+| `ElRoso.ARCA.Domains.Responses.InvoiceVerificationResponse` | `ElRoso.ARCA.Read` |
+| `ElRoso.ARCA.Domains.Responses.Mailbox*` | `ElRoso.ARCA.Read` |
+| `ElRoso.ARCA.Domains.Services.I{Certificate,LoginTicket}Service` | `ElRoso.ARCA.Core` |
+| `ElRoso.ARCA.Domains.Services.IBillingDocumentNumberingService` | `ElRoso.ARCA.Billing` |
+| `ElRoso.ARCA.Domains.Services.I{InvoiceVerification,ElectronicMailbox}Service` | `ElRoso.ARCA.Read` |
+| `ElRoso.ARCA.DependencyInjection.AddARCAClient()` | `ElRoso.ARCA.AddARCAClient()` |
+
+### Migration guide
+
+Reemplazá los `using` viejos con los tres nuevos buckets:
+
+```diff
+-using ElRoso.ARCA.DependencyInjection;
+-using ElRoso.ARCA.Domains.Enums;
+-using ElRoso.ARCA.Domains.Requests;
+-using ElRoso.ARCA.Domains.Responses;
+-using ElRoso.ARCA.Domains.Services;
+-using ElRoso.ARCA.Exceptions;
+-using ElRoso.ARCA.Options;
++using ElRoso.ARCA;          // AddARCAClient
++using ElRoso.ARCA.Core;     // ARCAOptions, exceptions, IssuingCompany, Client, document types
++using ElRoso.ARCA.Billing;  // IBillingDocumentNumberingService, BillingDocumentNumberingRequest, etc.
++using ElRoso.ARCA.Read;     // IInvoiceVerificationService, IElectronicMailboxService, etc.
+```
+
+Find/replace cheatsheet (regex):
+
+```
+\busing ElRoso\.ARCA\.(Caching|Exceptions|Options|Domains\.(Enums|Requests|Responses|Services))\b
+→  using ElRoso.ARCA.Core;
+   using ElRoso.ARCA.Billing;
+   using ElRoso.ARCA.Read;
+   (luego borrar los duplicados)
+```
+
+### Added
+
+- Sub-namespaces `ElRoso.ARCA.Core`, `ElRoso.ARCA.Billing`, `ElRoso.ARCA.Read` con todos los tipos públicos reorganizados por área funcional.
+- 21 tests nuevos para las mapping helpers internas (`BuildFilter`, `MapSummary`, `MapMessage`, `BuildCmpDatos`, etc.).
+- Estructura de carpetas alineada con los namespaces: `ARCA/{Core,Billing,Read}/...`.
+
+### Changed
+
+- Cobertura subió **54.91% → 64.08%** (197/197 tests pasando).
+- `MIN_COVERAGE` del CI sigue en 55 con margen amplio.
+- Helpers de mapping en `Soap` operations cambiaron de `private static` a `internal static` para habilitar unit testing directo.
+
+### Internal
+
+- Connected Services namespaces (WSAA, WSFEv1, WSFEXv1, Padron, WSCDC, WSCComu) sin cambios — son tipos internos generados que no afectan la API pública.
+- Las interfaces `IPadronOperations`, `IWsfeOperations`, `IWsfexOperations` (Billing) y `IInvoiceVerificationOperations`, `IElectronicMailboxOperations` (Read) siguen siendo internal — el consumidor no las ve.
+
 ## [1.1.0] — 2026-05-14
 
 🎉 **Read-side de ARCA** — features que la comunidad pidió desde el día uno.

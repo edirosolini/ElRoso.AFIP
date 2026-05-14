@@ -1,8 +1,8 @@
 // EN: Tests for BillingDocumentNumberingValidator - the top-level validator for billing requests.
 // ES: Tests para BillingDocumentNumberingValidator - el validator de tope del request de facturación.
-using ElRoso.ARCA.Domains.Enums;
-using ElRoso.ARCA.Domains.Requests;
-using ElRoso.ARCA.Validations;
+using ElRoso.ARCA.Core;
+using ElRoso.ARCA.Billing;
+using ElRoso.ARCA.Read;
 
 namespace ElRoso.ARCA.Tests.Validations;
 

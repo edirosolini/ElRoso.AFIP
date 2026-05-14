@@ -1,6 +1,6 @@
 // EN: Tests for ARCAValidationException - thrown when FluentValidation fails locally.
 // ES: Tests para ARCAValidationException - se lanza cuando FluentValidation falla local.
-using ElRoso.ARCA.Exceptions;
+using ElRoso.ARCA.Core;
 
 namespace ElRoso.ARCA.Tests.Exceptions;
 
