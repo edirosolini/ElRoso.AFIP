@@ -6,6 +6,30 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-05-14
+
+Primer release estable (GA). API pública estable bajo SemVer — cambios breaking solo en `v2.x`.
+
+### Cambios desde `1.0.0-preview.1`
+
+#### Added
+
+- **Cobertura de tests subió de 25% → 60%+** (151 tests, +56 desde preview.1)
+- Nueva capa de wrappers SOAP (`IPadronOperations`, `IWsfeOperations`, `IWsfexOperations`) en `Services.Soap` — separa la lógica de orquestación del transporte SOAP, habilita unit-testing del service principal con mocks
+- Tests del happy path doméstico (con CUIT/Padrón y SIN_IDENTIFICAR), happy path exportación, ramas de error de WSFEv1/WSFEXv1, errores de Padrón, token cache miss → WSAA refresh
+- Tests de `FileTokenCache` (roundtrip, expiración, isolation por servicio/empresa, concurrencia)
+- Tests de `CertificateService` (load PFX, cache, firma PKCS#7, errores)
+- Tests de `BillingDocumentNumberingResponse.QRCode()` (decode base64 + verificación del schema AFIP completo)
+- Tests del registro de DI vía `AddARCAClient()` (lifetimes, opciones, fluent chaining)
+- Integración con Codecov: badge en el README, gate en CI (mínimo 55%), comentarios automáticos en PRs
+
+#### Changed
+
+- **Refactor interno de `BillingDocumentNumberingService`** — ahora delega a los tres wrappers SOAP en vez de construir clientes WCF inline. **API pública sin cambios.**
+- `MIN_COVERAGE` del CI subido de 25 a 55 (margen de 5 pp bajo el real)
+- `dependabot.yml` agrupa Microsoft.Extensions.*, System.ServiceModel.*, xunit y test-tooling — minor/patch agrupados, major requiere review individual
+- `dependabot.yml` bloquea bumps que rompen: FluentAssertions v8+ (licencia comercial Xceed), System.ServiceModel.* major (versiones inconsistentes 6.x/8.x), StyleCop.Analyzers v2.x
+
 ## [1.0.0-preview.1] — 2026-05-13
 
 Primer release público en NuGet.org. ¡Bienvenidos! 🇦🇷

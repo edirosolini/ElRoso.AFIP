@@ -13,9 +13,9 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
   CONFIGURATION: 'Release'
 
-  # EN: Lower bound. Raise gradually as test suite grows toward 60%.
-  # ES: Cota mínima. Subir a medida que crezca la suite hacia 60%.
-  MIN_COVERAGE: '25'
+  # EN: Lower bound — we are above 60% (industry standard for libraries). Margin of 5pp.
+  # ES: Cota mínima — estamos arriba del 60% (estándar de la industria para libs). Margen de 5pp.
+  MIN_COVERAGE: '55'
 
 jobs:
   build-and-test:
