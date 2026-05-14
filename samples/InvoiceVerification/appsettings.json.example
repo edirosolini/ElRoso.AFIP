@@ -1,0 +1,18 @@
+{
+  "Arca": {
+    "IsProduction": false,
+    "CertificatePath": "/path/to/your/homologation.pfx",
+    "CertificatePassword": "",
+    "TokenCacheDirectory": "./.arca-tokens",
+    "SoapTimeoutSeconds": 30
+  },
+  "Sample": {
+    "IssuerCuit": "20123456789",
+    "BillingDocumentType": "FA",
+    "BillingDocumentBookPrefix": 1,
+    "BillingDocumentNumber": 42,
+    "BillingDocumentDate": "2026-05-01",
+    "TotalAmount": 1210.00,
+    "AuthorizationCode": "75123456789012"
+  }
+}

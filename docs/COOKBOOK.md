@@ -15,6 +15,7 @@ Cosas que en su momento me hicieron perder horas. Acá las anoto para que vos no
 - [Códigos de error ARCA típicos](#códigos-de-error-arca-típicos)
 - [Notas de Crédito y Débito](#notas-de-crédito-y-débito)
 - [Factura de Exportación](#factura-de-exportación)
+- [WSCDC — Verificación de comprobantes recibidos](#wscdc--verificación-de-comprobantes-recibidos)
 - [Docker y deploy](#docker-y-deploy)
 - [Concurrencia y reintentos](#concurrencia-y-reintentos)
 
@@ -189,6 +190,49 @@ Porque WSFEXv1 requiere detalle de items, mientras que WSFEv1 acepta un solo imp
 Es un ID único secuencial **tuyo** (no de ARCA). La lib no lo genera — tenés que llevar el contador en tu DB. Empezá en 1 e incrementá. Si dos exportaciones tienen el mismo ID, ARCA las rechaza.
 
 ---
+
+## WSCDC — Verificación de comprobantes recibidos
+
+### "¿Sirve para listar todas las facturas que recibí?"
+
+**No.** WSCDC valida **un comprobante específico a la vez**. Vos le pasás todos los datos del comprobante (CUIT emisor + tipo + nro + fecha + total + CAE) y ARCA responde si lo conoce y está autorizado. Sirve cuando ya tenés la factura en mano (PDF, XML, papel) y querés confirmar autenticidad.
+
+Para listar comprobantes recibidos, hoy no hay WS oficial — solo el portal de ARCA. Ver [ROADMAP](./ROADMAP.md).
+
+### Servicio que hay que adherir
+
+En el portal ARCA: **Administrador de Relaciones de Clave Fiscal → Adherir Servicio → `Constatación de Comprobantes`** (también listado como `wscdc`). Mismo certificado que usás para WSFEv1, pero el **TA es separado** (la lib lo cachea aparte).
+
+### Diferencias CAE / CAI / CAEA
+
+| Modo | Cuándo lo ves | En `AuthorizationMode` |
+|------|---------------|------------------------|
+| **CAE** | Facturas electrónicas emitidas online (lo más común) | `AuthorizationModeARCAEnum.CAE` |
+| **CAI** | Controladores fiscales (cajas registradoras viejas, talonarios pre-impresos) | `AuthorizationModeARCAEnum.CAI` |
+| **CAEA** | Facturación electrónica anticipada (volúmenes altos con corte) | `AuthorizationModeARCAEnum.CAEA` |
+
+Si dudás, probá con CAE primero. Si rechaza con observación "modo incorrecto", pasá a CAI.
+
+### "El CAE es válido pero el comprobante igual da rechazado"
+
+Pasa cuando los datos enviados no matchean exactamente lo que ARCA tiene registrado:
+- **Importe total** debe ser EXACTAMENTE igual al del comprobante (redondeo a 2 decimales — ojo con .005 que se redondea distinto)
+- **Fecha del comprobante** en formato yyyy-MM-dd
+- **CUIT del emisor** sin guiones
+- **Tipo de comprobante** debe usar el código ARCA (FA=1, FB=6, etc.)
+
+### Códigos de error típicos del WSCDC
+
+| Código | Significado | Solución |
+|--------|-------------|----------|
+| 10048  | El CAE no corresponde al CUIT emisor | Verificar que el CUIT está bien escrito |
+| 10050  | El CAE no corresponde al tipo de comprobante | El tipo es FA pero quizá es FB |
+| 10056  | El importe total no coincide | Re-leer el PDF, puede haber un decimal mal |
+| 600    | Token inválido | TA expiró — la lib refresca solo, pero si insiste revisar el servicio adherido |
+
+### "Querés validar al recibir cada factura electrónica de proveedores"
+
+Si tu app procesa facturas electrónicas automáticamente (lectura de XML AFIP-Reportes, etc.), correr WSCDC al ingestar cada una es una buena práctica antifraude. Costo: un round-trip SOAP por factura. Bajo en absoluto, alto en escala — considerá cache en tu lado para no re-validar lo mismo cada vez.
 
 ## Docker y deploy
 

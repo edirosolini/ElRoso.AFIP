@@ -58,6 +58,21 @@
             });
             </example>
         </member>
+        <member name="T:ElRoso.ARCA.Domains.Enums.AuthorizationModeARCAEnum">
+            <summary>
+            EN: Type of ARCA authorization code being verified.
+            ES: Tipo de código de autorización de ARCA que se valida.
+            </summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.AuthorizationModeARCAEnum.CAE">
+            <summary>Código de Autorización Electrónico (default — facturación electrónica).</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.AuthorizationModeARCAEnum.CAI">
+            <summary>Código de Autorización de Impresión (controlador fiscal / manual).</summary>
+        </member>
+        <member name="F:ElRoso.ARCA.Domains.Enums.AuthorizationModeARCAEnum.CAEA">
+            <summary>Código de Autorización Electrónico Anticipado.</summary>
+        </member>
         <member name="F:ElRoso.ARCA.Domains.Enums.BillingDocumentTypeARCAEnum.FA">
             <summary>Factura A.</summary>
         </member>
@@ -127,6 +142,39 @@
         <member name="P:ElRoso.ARCA.Domains.Requests.BillingDocumentNumberingRequest.Version">
             <summary>QR code schema version. / Versión del esquema del QR.</summary>
         </member>
+        <member name="T:ElRoso.ARCA.Domains.Requests.InvoiceVerificationRequest">
+            <summary>
+            EN: Request to verify a received invoice against ARCA (WSCDC / Constatación de Comprobantes).
+            ES: Request para validar una factura recibida contra ARCA (WSCDC).
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Requests.InvoiceVerificationRequest.IssuingCompany">
+            <summary>Issuing company's CUIT. / CUIT del emisor.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Requests.InvoiceVerificationRequest.Receiver">
+            <summary>Receiver's CUIT/DNI (optional). / CUIT/DNI del receptor (opcional).</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Requests.InvoiceVerificationRequest.BillingDocumentType">
+            <summary>Voucher type (FA, FB, FC, etc). / Tipo de comprobante.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Requests.InvoiceVerificationRequest.BillingDocumentBookPrefix">
+            <summary>Punto de venta (book prefix).</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Requests.InvoiceVerificationRequest.BillingDocumentNumber">
+            <summary>Voucher number (Cbte_nro). / Número de comprobante.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Requests.InvoiceVerificationRequest.BillingDocumentDate">
+            <summary>Voucher date. / Fecha del comprobante.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Requests.InvoiceVerificationRequest.TotalAmount">
+            <summary>Total amount on the voucher. / Importe total del comprobante.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Requests.InvoiceVerificationRequest.AuthorizationCode">
+            <summary>Authorization code (CAE/CAI/CAEA) printed on the voucher. / Código de autorización impreso en el comprobante.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Requests.InvoiceVerificationRequest.AuthorizationMode">
+            <summary>Type of authorization being validated. Default: CAE. / Tipo de autorización a validar. Default: CAE.</summary>
+        </member>
         <member name="T:ElRoso.ARCA.Domains.Requests.LoginTicketRequest">
             <summary>
             Internal WSAA request state. Not part of the public API.
@@ -144,6 +192,27 @@
             Generates the ARCA QR code URL for printing on the invoice.
             Genera la URL del código QR de ARCA para imprimir en el comprobante.
             </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Domains.Responses.InvoiceVerificationResponse">
+            <summary>
+            EN: Result of validating a received voucher with ARCA WSCDC.
+            ES: Resultado de validar un comprobante recibido contra WSCDC de ARCA.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Responses.InvoiceVerificationResponse.IsAuthorized">
+            <summary>True when ARCA confirms the voucher is authorized (Resultado == "A").</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Responses.InvoiceVerificationResponse.Resultado">
+            <summary>Raw ARCA result code: "A" approved, "R" rejected. / Código crudo: "A" aprobado, "R" rechazado.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Responses.InvoiceVerificationResponse.ProcessedDate">
+            <summary>Date when ARCA processed the verification. / Fecha en que ARCA procesó la verificación.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Responses.InvoiceVerificationResponse.Observations">
+            <summary>Observations returned by ARCA (rejection reasons). / Observaciones (motivos de rechazo).</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Domains.Responses.InvoiceVerificationResponse.Errors">
+            <summary>Errors returned by ARCA (request-level problems). / Errores devueltos por ARCA.</summary>
         </member>
         <member name="T:ElRoso.ARCA.Domains.Services.IBillingDocumentNumberingService">
             <summary>
@@ -176,6 +245,14 @@
             <summary>
             Loads an X.509 certificate (with private key) from a .pfx/.p12 file.
             Carga un certificado X.509 (con clave privada) desde un archivo .pfx/.p12.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Domains.Services.IInvoiceVerificationService">
+            <summary>
+            EN: Verifies received vouchers against ARCA (WSCDC). Useful when you receive an electronic
+            invoice from a vendor and want to confirm the CAE/CAI/CAEA is real and active.
+            ES: Valida comprobantes recibidos contra ARCA (WSCDC). Útil cuando recibís una factura
+            electrónica de un proveedor y querés confirmar que el CAE/CAI/CAEA es real y está vigente.
             </summary>
         </member>
         <member name="T:ElRoso.ARCA.Domains.Services.ILoginTicketService">
@@ -256,6 +333,24 @@
             Falls back to system clock if NTP is unreachable — WSAA tolerates ±10 min.
             Obtiene la hora del servidor NTP de ARCA, cacheada por 60 s.
             Usa el reloj del sistema como fallback — WSAA tolera ±10 min de desvío.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Services.Soap.IInvoiceVerificationOperations">
+            <summary>
+            EN: Thin wrapper over the ARCA WSCDC SOAP client (Constatación de Comprobantes).
+            ES: Wrapper fino sobre el cliente SOAP del WSCDC de ARCA.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Services.Soap.InvoiceVerificationOperationResult">
+            <summary>
+            EN: POCO result of a WSCDC verification — hides WCF types from the consumer.
+            ES: Resultado POCO de una verificación WSCDC — oculta los tipos WCF del consumidor.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Services.Soap.InvoiceVerificationOperations.TryParseFchProceso(System.String)">
+            <summary>
+            EN: Parses the ARCA FchProceso field. Supports both yyyyMMdd and yyyyMMddHHmmss formats.
+            ES: Parsea el campo FchProceso de ARCA. Soporta yyyyMMdd y yyyyMMddHHmmss.
             </summary>
         </member>
         <member name="T:ElRoso.ARCA.Services.Soap.IPadronOperations">

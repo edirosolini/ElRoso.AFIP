@@ -58,4 +58,8 @@ public class ARCAOptions
     internal string PadronUrl => IsProduction
         ? "https://aws.afip.gov.ar/sr-padron/webservices/personaServiceA5"
         : "https://awshomo.afip.gov.ar/sr-padron/webservices/personaServiceA5";
+
+    internal string WscdcUrl => IsProduction
+        ? "https://servicios1.afip.gov.ar/WSCDC/service.asmx"
+        : "https://wswhomo.afip.gov.ar/WSCDC/service.asmx";
 }

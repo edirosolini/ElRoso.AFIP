@@ -45,17 +45,20 @@ public static class ARCAServiceCollectionExtensions
 
         services.AddSingleton<ILoginTicketService, LoginTicketService>();
 
-        // SOAP operation wrappers — separated so BillingDocumentNumberingService is unit-testable.
-        // Wrappers de operaciones SOAP — separados para que BillingDocumentNumberingService sea testeable.
+        // SOAP operation wrappers — separated so consumer services are unit-testable.
+        // Wrappers de operaciones SOAP — separados para que los services consumidores sean testeables.
         services.AddSingleton<IPadronOperations, PadronOperations>();
         services.AddSingleton<IWsfeOperations, WsfeOperations>();
         services.AddSingleton<IWsfexOperations, WsfexOperations>();
+        services.AddSingleton<IInvoiceVerificationOperations, InvoiceVerificationOperations>();
 
         services.AddSingleton<IBillingDocumentNumberingService, BillingDocumentNumberingService>();
+        services.AddSingleton<IInvoiceVerificationService, InvoiceVerificationService>();
 
         // Singleton: validators are stateless and safe to reuse.
         // Singleton: los validadores son stateless y se pueden reusar.
         services.AddSingleton<IValidator<BillingDocumentNumberingRequest>, BillingDocumentNumberingValidator>();
+        services.AddSingleton<IValidator<InvoiceVerificationRequest>, InvoiceVerificationValidator>();
 
         return services;
     }

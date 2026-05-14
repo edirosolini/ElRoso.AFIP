@@ -15,6 +15,7 @@
 - ✅ Facturación exportación WSFEXv1 (Factura, NC, ND)
 - ✅ Padrón A5 (consulta de inscripción AFIP por CUIT)
 - ✅ Generación del QR oficial para impresión
+- ✅ **Verificación de comprobantes recibidos vía WSCDC** (desde v1.1.0)
 
 ---
 
@@ -244,6 +245,36 @@ DateOfServicesFrom = new DateTime(2026, 3, 1),
 DateOfServicesTo   = new DateTime(2026, 3, 31),
 PaymentDue         = new DateTime(2026, 4, 10),
 ```
+
+### Verificar un comprobante recibido (WSCDC)
+
+Cuando recibís una Factura A de un proveedor, antes de pagarla podés validarla contra ARCA:
+
+```csharp
+var verifier = sp.GetRequiredService<IInvoiceVerificationService>();
+
+var response = await verifier.VerifyAsync(new InvoiceVerificationRequest
+{
+    BillingDocumentType       = BillingDocumentTypeARCAEnum.FA,
+    BillingDocumentBookPrefix = 1,                          // Punto de venta
+    BillingDocumentNumber     = 42,                         // Nro. de comprobante
+    BillingDocumentDate       = new DateTime(2026, 5, 1),
+    TotalAmount               = 1210.00,
+    AuthorizationCode         = "75123456789012",           // CAE / CAI / CAEA
+    AuthorizationMode         = AuthorizationModeARCAEnum.CAE,
+    IssuingCompany = new() { DocumentType = DocumentTypeARCAEnum.CUIT, DocumentNumber = 20123456789 },
+});
+
+if (response.IsAuthorized)
+    Console.WriteLine($"✅ CAE válido. Procesado: {response.ProcessedDate:yyyy-MM-dd}");
+else
+{
+    Console.WriteLine("❌ NO autorizado:");
+    foreach (var obs in response.Observations) Console.WriteLine($"  {obs}");
+}
+```
+
+> Requiere el servicio **`wscdc`** adherido en el portal de ARCA. Sample runnable en [`samples/InvoiceVerification/`](./samples/InvoiceVerification/).
 
 ### Factura de Exportación
 

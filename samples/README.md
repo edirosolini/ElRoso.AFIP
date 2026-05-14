@@ -28,6 +28,7 @@ dotnet run
 | Sample | Qué demuestra |
 |--------|---------------|
 | [QuickStart](./QuickStart/) | Emisión de Factura A mínima en homologación |
+| [InvoiceVerification](./InvoiceVerification/) | Verificación de un comprobante recibido vía WSCDC |
 
 ## Próximamente
 
