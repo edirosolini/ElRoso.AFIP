@@ -73,4 +73,41 @@ public class ARCAOptionsTests
 
         url.Should().Contain(expectedHost);
     }
+
+    [Theory]
+    [InlineData(false, "stable-middleware-tecno-ext.afip.gob.ar")]
+    [InlineData(true, "infraestructura.afip.gob.ar")]
+    public void WsccomuUrl_should_switch_by_environment(bool isProduction, string expectedHost)
+    {
+        var options = new ARCAOptions { IsProduction = isProduction };
+
+        options.WsccomuUrl.Should().Contain(expectedHost);
+    }
+
+    [Fact]
+    public void WsccomuUrl_should_respect_override_when_set()
+    {
+        var options = new ARCAOptions
+        {
+            IsProduction = true,
+            WsccomuUrl = "https://my-proxy.example.com/ve-ws/services/veconsumer",
+        };
+
+        options.WsccomuUrl.Should().Be("https://my-proxy.example.com/ve-ws/services/veconsumer");
+    }
+
+    [Fact]
+    public void WsccomuUrl_should_fall_back_to_default_when_override_cleared()
+    {
+        var options = new ARCAOptions
+        {
+            IsProduction = true,
+            WsccomuUrl = "https://my-proxy.example.com/...",
+        };
+
+        // Clearing the override should restore the environment-based default.
+        options.WsccomuUrl = string.Empty;
+
+        options.WsccomuUrl.Should().Contain("infraestructura.afip.gob.ar");
+    }
 }

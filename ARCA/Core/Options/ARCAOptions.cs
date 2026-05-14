@@ -41,14 +41,24 @@ public class ARCAOptions
     public int SoapTimeoutSeconds { get; set; } = 30;
 
     /// <summary>
-    /// EN: WSCComu (e-Ventanilla / DFE) endpoint URL. Defaults to the homologation endpoint.
-    /// ARCA has not publicly listed the production URL for this service — set this property
-    /// explicitly to the production URL when you go live. Contact webservices-desa@arca.gob.ar
-    /// if unsure.
-    /// ES: URL del WSCComu. Default es homologación. ARCA no publica la URL de producción —
-    /// configurar explícitamente al pasar a producción.
+    /// EN: WSCComu (e-Ventanilla / DFE) endpoint URL. By default it is resolved automatically from
+    /// <see cref="IsProduction"/> — same convention used by every other ARCA WS in this lib. Override
+    /// it only if ARCA migrates the URL or if you proxy through your own middleware.
+    /// ES: URL del WSCComu. Por defecto se resuelve automáticamente desde <see cref="IsProduction"/>
+    /// — la misma convención que usan el resto de los WS. Solo seteala manualmente si ARCA migra la
+    /// URL o si proxyás a través de un middleware propio.
     /// </summary>
-    public string WsccomuUrl { get; set; } = "https://stable-middleware-tecno-ext.afip.gob.ar/ve-ws/services/veconsumer";
+    public string WsccomuUrl
+    {
+        get => string.IsNullOrWhiteSpace(this.wscomuUrlOverride)
+            ? (this.IsProduction
+                ? "https://infraestructura.afip.gob.ar/ve-ws/services/veconsumer"
+                : "https://stable-middleware-tecno-ext.afip.gob.ar/ve-ws/services/veconsumer")
+            : this.wscomuUrlOverride;
+        set => this.wscomuUrlOverride = value;
+    }
+
+    private string? wscomuUrlOverride;
 
     // --- Internal resolved URLs (set by SetIsProduction) ---
 

@@ -6,6 +6,29 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-05-14
+
+✨ **`WsccomuUrl` ahora se resuelve por `IsProduction`** — el último WS que requería configuración manual ahora sigue la misma convención que el resto.
+
+### Changed
+
+- `ARCAOptions.WsccomuUrl` se calcula automáticamente desde `IsProduction`:
+  - `IsProduction=false` → `https://stable-middleware-tecno-ext.afip.gob.ar/ve-ws/services/veconsumer`
+  - `IsProduction=true`  → `https://infraestructura.afip.gob.ar/ve-ws/services/veconsumer`
+- La property sigue siendo `public settable` — si la seteás manualmente tu override gana (útil si ARCA migra la URL o si proxyás a través de tu propio middleware). Setearla a `null`/string vacío vuelve al default por ambiente.
+
+### Why
+
+ARCA mantiene la URL de producción de WSCComu fuera de la documentación pública (a diferencia de los demás WS). En `v2.0.0` la dejamos como property settable con default a homologación, lo cual rompía la simetría: cuando el consumidor seteaba `IsProduction=true`, **todos** los WS se iban a producción excepto WSCComu, que quedaba apuntando a homologación → mismatch de cert → `ARCAAuthException` engañoso que parecía falta de delegación pero era URL incorrecta.
+
+### Migration
+
+Sin cambios para la mayoría — la behavior change resuelve un bug, no introduce uno. Si tu código tenía `options.WsccomuUrl = "<prod-url>"` para producción, **podés eliminar esa línea** — la lib la resuelve sola. Si lo dejás, sigue funcionando como override.
+
+### Added
+
+- 3 tests nuevos para `WsccomuUrl`: switch por ambiente, override respetado, fallback al default cuando el override se limpia.
+
 ## [2.0.0] — 2026-05-14
 
 🧱 **Modular refactor** — la API pública se separa en tres sub-namespaces por área funcional. **Breaking change** en el namespace de cada tipo. La funcionalidad es idéntica.

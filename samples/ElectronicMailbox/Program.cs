@@ -27,11 +27,10 @@ services.AddARCAClient(options =>
     options.CertificatePassword = arca["CertificatePassword"];
     options.TokenCacheDirectory = arca["TokenCacheDirectory"] ?? Path.GetTempPath();
     options.SoapTimeoutSeconds  = arca.GetValue<int>("SoapTimeoutSeconds", 30);
-    // EN: For production, set the production URL here. Defaults to homologation.
-    // ES: Para producción, setear la URL acá. Por default homologación.
-    var prodUrl = arca["WsccomuUrl"];
-    if (!string.IsNullOrWhiteSpace(prodUrl))
-        options.WsccomuUrl = prodUrl;
+    // EN: WsccomuUrl is now auto-resolved from IsProduction — no manual override required.
+    //     Set options.WsccomuUrl only if ARCA migrates the endpoint or you proxy through middleware.
+    // ES: WsccomuUrl ahora se resuelve automáticamente desde IsProduction — sin override manual.
+    //     Setealo solo si ARCA migra la URL o si proxyás a través de middleware propio.
 });
 
 await using var sp = services.BuildServiceProvider();
