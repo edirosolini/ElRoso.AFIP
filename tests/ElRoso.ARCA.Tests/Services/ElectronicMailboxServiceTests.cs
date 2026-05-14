@@ -54,7 +54,7 @@ public class ElectronicMailboxServiceTests
     public async Task ListAsync_with_cache_hit_should_use_cached_ticket_and_call_operations()
     {
         tokenCacheMock
-            .Setup(t => t.GetAsync("wsccomu", It.IsAny<long>(), It.IsAny<CancellationToken>()))
+            .Setup(t => t.GetAsync("veconsumerws", It.IsAny<long>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(FreshTicket());
 
         operationsMock
@@ -81,18 +81,18 @@ public class ElectronicMailboxServiceTests
         response.TotalItems.Should().Be(2);
 
         loginTicketServiceMock.VerifyNoOtherCalls();
-        tokenCacheMock.Verify(t => t.GetAsync("wsccomu", It.IsAny<long>(), It.IsAny<CancellationToken>()), Times.Once);
+        tokenCacheMock.Verify(t => t.GetAsync("veconsumerws", It.IsAny<long>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task ListAsync_on_cache_miss_should_refresh_via_WSAA()
     {
         tokenCacheMock
-            .Setup(t => t.GetAsync("wsccomu", It.IsAny<long>(), It.IsAny<CancellationToken>()))
+            .Setup(t => t.GetAsync("veconsumerws", It.IsAny<long>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((LoginTicketResponse?)null);
 
         loginTicketServiceMock
-            .Setup(l => l.GetLoginTicketAsync("wsccomu", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(l => l.GetLoginTicketAsync("veconsumerws", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(FreshTicket());
 
         operationsMock
@@ -104,11 +104,11 @@ public class ElectronicMailboxServiceTests
         await service.ListAsync(new MailboxQueryRequest { IssuingCompany = ValidIssuer() });
 
         loginTicketServiceMock.Verify(l => l.GetLoginTicketAsync(
-            "wsccomu", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            "veconsumerws", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Once);
 
         tokenCacheMock.Verify(t => t.SetAsync(
-            "wsccomu", It.IsAny<long>(), It.IsAny<LoginTicketResponse>(), It.IsAny<CancellationToken>()),
+            "veconsumerws", It.IsAny<long>(), It.IsAny<LoginTicketResponse>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -144,7 +144,7 @@ public class ElectronicMailboxServiceTests
     public async Task ConsumeAsync_with_valid_request_returns_full_message()
     {
         tokenCacheMock
-            .Setup(t => t.GetAsync("wsccomu", It.IsAny<long>(), It.IsAny<CancellationToken>()))
+            .Setup(t => t.GetAsync("veconsumerws", It.IsAny<long>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(FreshTicket());
 
         operationsMock
@@ -179,7 +179,7 @@ public class ElectronicMailboxServiceTests
     public async Task ConsumeAsync_with_unknown_message_should_return_error_response()
     {
         tokenCacheMock
-            .Setup(t => t.GetAsync("wsccomu", It.IsAny<long>(), It.IsAny<CancellationToken>()))
+            .Setup(t => t.GetAsync("veconsumerws", It.IsAny<long>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(FreshTicket());
 
         operationsMock
@@ -207,7 +207,7 @@ public class ElectronicMailboxServiceTests
     public async Task ListAsync_should_propagate_pagination_metadata()
     {
         tokenCacheMock
-            .Setup(t => t.GetAsync("wsccomu", It.IsAny<long>(), It.IsAny<CancellationToken>()))
+            .Setup(t => t.GetAsync("veconsumerws", It.IsAny<long>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(FreshTicket());
 
         operationsMock

@@ -6,6 +6,18 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [Unreleased]
 
+## [2.1.1] — 2026-05-14
+
+🐛 **Fix: WSAA service identifier para WSCComu** — la lib estaba mandando `"wsccomu"` y WSAA respondía `"Servicio informado inexistente"`. El identificador correcto es `"veconsumerws"` (el namespace del Connected Service, no la abreviación marketinera). Sin este fix, **ningún call a WSCComu funcionaba en producción**.
+
+### Fixed
+
+- `ElectronicMailboxService.WsccomuServiceName`: `"wsccomu"` → `"veconsumerws"`.
+
+### Notes
+
+Sin migración necesaria — bug puro. Cualquiera que tuviera la integración rota con `ARCAAuthException → FaultException: Servicio informado inexistente` debería upgradear directo.
+
 ## [2.1.0] — 2026-05-14
 
 ✨ **`WsccomuUrl` ahora se resuelve por `IsProduction`** — el último WS que requería configuración manual ahora sigue la misma convención que el resto.

@@ -10,7 +10,13 @@ using Microsoft.Extensions.Logging;
 
 internal sealed class ElectronicMailboxService : IElectronicMailboxService
 {
-    private const string WsccomuServiceName = "wsccomu";
+    // EN: WSAA service identifier for WSCComu. ARCA's WSAA expects "veconsumerws" (the
+    //     Connected Service namespace), NOT "wsccomu". Using the wrong name yields
+    //     "Servicio informado inexistente" from WSAA.
+    // ES: Identificador WSAA del WSCComu. ARCA espera "veconsumerws" (el namespace del
+    //     Connected Service), NO "wsccomu". Usar el nombre incorrecto da
+    //     "Servicio informado inexistente" desde WSAA.
+    private const string WsccomuServiceName = "veconsumerws";
 
     private readonly ILogger<ElectronicMailboxService> logger;
     private readonly ILoginTicketService loginTicketService;
