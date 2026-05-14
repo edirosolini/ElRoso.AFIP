@@ -1,7 +1,7 @@
 version: 2
 
 updates:
-  # NuGet dependencies (main library + tests)
+  # NuGet dependencies (main library + tests + samples)
   - package-ecosystem: "nuget"
     directory: "/"
     schedule:
@@ -16,16 +16,53 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+
+    # EN: Block updates that are known to break or that conflict with project licensing.
+    # ES: Bloquea updates conocidos por romper o por licencia incompatible.
+    ignore:
+      # FluentAssertions v8+ moved to a commercial license (Xceed). Stay on 7.x (Apache 2.0).
+      - dependency-name: "FluentAssertions"
+        update-types: ["version-update:semver-major"]
+
+      # System.ServiceModel.* packages have inconsistent major versions across the family
+      # (Duplex/Security stuck on 6.x, Http/NetTcp/Federation on 8.x). Major bumps must be
+      # coordinated by hand to avoid mismatched APIs.
+      - dependency-name: "System.ServiceModel.*"
+        update-types: ["version-update:semver-major"]
+
+      # StyleCop.Analyzers 2.x deprecates a lot of rules we rely on. Pin to 1.x.
+      - dependency-name: "StyleCop.Analyzers"
+        update-types: ["version-update:semver-major"]
+
+    # EN: Group minor/patch updates so we don't drown in PRs. Major updates stay individual.
+    # ES: Agrupa minor/patch para no ahogarnos en PRs. Major queda como PR individual.
     groups:
       microsoft-extensions:
         patterns:
           - "Microsoft.Extensions.*"
+        update-types:
+          - "minor"
+          - "patch"
       system-servicemodel:
         patterns:
           - "System.ServiceModel.*"
+        update-types:
+          - "minor"
+          - "patch"
       xunit:
         patterns:
           - "xunit*"
+        update-types:
+          - "minor"
+          - "patch"
+      test-tooling:
+        patterns:
+          - "Microsoft.NET.Test.Sdk"
+          - "coverlet.*"
+          - "Moq"
+        update-types:
+          - "minor"
+          - "patch"
 
   # GitHub Actions workflows
   - package-ecosystem: "github-actions"
