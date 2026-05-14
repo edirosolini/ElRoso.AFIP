@@ -9,6 +9,7 @@ using ElRoso.ARCA.Domains.Requests;
 using ElRoso.ARCA.Domains.Services;
 using ElRoso.ARCA.Options;
 using ElRoso.ARCA.Services;
+using ElRoso.ARCA.Services.Soap;
 using ElRoso.ARCA.Validations;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
@@ -43,6 +44,13 @@ public static class ARCAServiceCollectionExtensions
                 sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<FileTokenCache>>()));
 
         services.AddSingleton<ILoginTicketService, LoginTicketService>();
+
+        // SOAP operation wrappers — separated so BillingDocumentNumberingService is unit-testable.
+        // Wrappers de operaciones SOAP — separados para que BillingDocumentNumberingService sea testeable.
+        services.AddSingleton<IPadronOperations, PadronOperations>();
+        services.AddSingleton<IWsfeOperations, WsfeOperations>();
+        services.AddSingleton<IWsfexOperations, WsfexOperations>();
+
         services.AddSingleton<IBillingDocumentNumberingService, BillingDocumentNumberingService>();
 
         // Singleton: validators are stateless and safe to reuse.

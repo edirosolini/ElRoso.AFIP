@@ -258,6 +258,77 @@
             Usa el reloj del sistema como fallback — WSAA tolera ±10 min de desvío.
             </summary>
         </member>
+        <member name="T:ElRoso.ARCA.Services.Soap.IPadronOperations">
+            <summary>
+            EN: Thin wrapper over the ARCA Padron A5 SOAP client.
+                Exists so consumers can be unit-tested without touching the network.
+            ES: Wrapper fino sobre el cliente SOAP del Padrón A5 de ARCA.
+                Existe para que los consumidores puedan testearse sin tocar la red.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Services.Soap.PadronPersonaResult">
+            <summary>
+            EN: POCO result of a Padron query — hides WCF types from the consumer.
+            ES: Resultado POCO de una consulta al Padrón — oculta los tipos WCF del consumidor.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Services.Soap.PadronPersonaResult.Errors">
+            <summary>Errors returned by Padron, if any. / Errores devueltos por el Padrón.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Services.Soap.PadronPersonaResult.IsMonotributo">
+            <summary>True if the client is registered as Monotributo. / True si el cliente está como Monotributo.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Services.Soap.PadronPersonaResult.ClientName">
+            <summary>Resolved client name (razón social or apellido + nombre). / Nombre del cliente resuelto.</summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Services.Soap.IWsfeOperations">
+            <summary>
+            EN: Thin wrapper over the ARCA WSFEv1 SOAP client (domestic e-invoicing).
+            ES: Wrapper fino sobre el cliente SOAP del WSFEv1 de ARCA (facturación doméstica).
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Services.Soap.IWsfeOperations.GetLastNumberAsync(System.String,System.String,System.Int64,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            EN: Returns the last authorized document number for the given type + book.
+            ES: Devuelve el último número autorizado para el tipo + libro dados.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Services.Soap.IWsfeOperations.SolicitarCaeAsync(System.String,System.String,System.Int64,ElRoso.ARCA.Domains.Requests.BillingDocumentNumberingRequest,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            EN: Requests a CAE for one document. Returns POCO result with errors / observations / approval.
+            ES: Solicita un CAE para un documento. Devuelve resultado POCO con errores / observaciones / aprobación.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Services.Soap.WsfeCaeResult">
+            <summary>
+            EN: POCO result of a CAE request to WSFEv1 — hides WCF types from the consumer.
+            ES: Resultado POCO de una solicitud de CAE a WSFEv1 — oculta los tipos WCF del consumidor.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Services.Soap.WsfeCaeResult.IsApproved">
+            <summary>True when CAE was granted (Resultado == "A"). / True cuando el CAE fue otorgado.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Services.Soap.WsfeCaeResult.Cae">
+            <summary>The CAE code returned by ARCA. / Código CAE devuelto por ARCA.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Services.Soap.WsfeCaeResult.CaeExpiration">
+            <summary>CAE expiration date. / Fecha de vencimiento del CAE.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Services.Soap.WsfeCaeResult.Errors">
+            <summary>Errors returned by WSFEv1 (header-level or detail observations on rejection).</summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Services.Soap.IWsfexOperations">
+            <summary>
+            EN: Thin wrapper over the ARCA WSFEXv1 SOAP client (export e-invoicing).
+            ES: Wrapper fino sobre el cliente SOAP del WSFEXv1 de ARCA (facturación exportación).
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Services.Soap.WsfexCaeResult">
+            <summary>
+            EN: POCO result of an Authorize request to WSFEXv1.
+            ES: Resultado POCO de una solicitud Authorize a WSFEXv1.
+            </summary>
+        </member>
         <member name="T:Padron.SRValidationException">
             <remarks/>
         </member>
