@@ -6,6 +6,29 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [Unreleased]
 
+## [2.1.2] — 2026-05-14
+
+🐛 **Fix: WSCComu cliente SOAP ahora soporta MTOM** — el endpoint de producción siempre responde con `multipart/related; type="application/xop+xml"` (MTOM), incluso cuando no hay adjuntos. El binding generado por defecto solo aceptaba `application/soap+xml` plano y explotaba con `ProtocolException` al parsear cualquier respuesta exitosa.
+
+### Fixed
+
+- `ElectronicMailboxOperations.CreateClient()` ahora crea el `VEConsumerClient` con un `BasicHttpBinding` custom:
+  - `MessageEncoding = WSMessageEncoding.Mtom`
+  - `MaxReceivedMessageSize = int.MaxValue` (para no romper con adjuntos grandes en `ConsumeAsync`)
+  - `Security.Mode = Transport` (HTTPS)
+  - Timeouts derivados de `ARCAOptions.SoapTimeoutSeconds`.
+
+### Notes
+
+Bug puro, sin migración necesaria. Si los calls a `ListAsync` o `ConsumeAsync` te devolvían:
+
+```
+System.ServiceModel.ProtocolException: The content type multipart/related; type="application/xop+xml"
+  of the response message does not match the content type of the binding (application/soap+xml; charset=utf-8)
+```
+
+…upgradeá a 2.1.2 directo y desaparece. WSCDC, WSFEv1, WSFEXv1, Padron no usan MTOM, así que no necesitan cambios.
+
 ## [2.1.1] — 2026-05-14
 
 🐛 **Fix: WSAA service identifier para WSCComu** — la lib estaba mandando `"wsccomu"` y WSAA respondía `"Servicio informado inexistente"`. El identificador correcto es `"veconsumerws"` (el namespace del Connected Service, no la abreviación marketinera). Sin este fix, **ningún call a WSCComu funcionaba en producción**.

@@ -103,9 +103,28 @@ internal sealed class ElectronicMailboxOperations : IElectronicMailboxOperations
 
     private WSCComu.VEConsumerClient CreateClient()
     {
+        // EN: WSCComu in production responds with MTOM (multipart/related; xop+xml) even when
+        //     there are no attachments. The default generated binding uses plain SOAP encoding
+        //     and throws ProtocolException trying to parse the response.
+        //     Force MessageEncoding=Mtom + raise MaxReceivedMessageSize so large attachment
+        //     payloads in ConsumeAsync don't choke.
+        // ES: WSCComu en producción siempre responde MTOM. El binding default del generated
+        //     client espera SOAP plano y explota al parsear. Forzamos Mtom y subimos el
+        //     tamaño máximo para que los adjuntos del ConsumeAsync no rompan.
+        var binding = new System.ServiceModel.BasicHttpBinding
+        {
+            MessageEncoding = System.ServiceModel.WSMessageEncoding.Mtom,
+            MaxReceivedMessageSize = int.MaxValue,
+            SendTimeout = TimeSpan.FromSeconds(options.SoapTimeoutSeconds),
+            ReceiveTimeout = TimeSpan.FromSeconds(options.SoapTimeoutSeconds),
+            OpenTimeout = TimeSpan.FromSeconds(options.SoapTimeoutSeconds),
+            CloseTimeout = TimeSpan.FromSeconds(options.SoapTimeoutSeconds),
+        };
+        binding.Security.Mode = System.ServiceModel.BasicHttpSecurityMode.Transport;
+
         var client = new WSCComu.VEConsumerClient(
-            WSCComu.VEConsumerClient.EndpointConfiguration.VEConsumerPort,
-            options.WsccomuUrl);
+            binding,
+            new System.ServiceModel.EndpointAddress(options.WsccomuUrl));
         client.InnerChannel.OperationTimeout = TimeSpan.FromSeconds(options.SoapTimeoutSeconds);
         return client;
     }
