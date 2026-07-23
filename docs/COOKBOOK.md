@@ -372,7 +372,37 @@ WSFEv1 puede tener latencia alta (>10s) en horas pico. La lib usa el timeout con
 
 ### "Hice retry y emití el mismo comprobante dos veces"
 
-Pasa. Por eso ARCA expone `FECompUltimoAutorizado` para consultar el último autorizado antes de re-emitir. Si vas a hacer retry, primero consultá. La lib hoy NO lo hace solo — está en el [roadmap de la v2.x](https://github.com/edirosolini/ElRoso.ARCA/issues).
+Pasa, y es más fácil de lo que parece: **ARCA otorga el CAE antes de que vos lo persistas**. Si tu guardado local falla en esa ventana —una excepción, un deadlock, un timeout de base— el comprobante queda autorizado en ARCA y ausente en tu base. El reintento natural (volver a llamar `AuthorizeAsync`) saca un **segundo CAE para la misma venta**: un duplicado fiscal que después hay que anular con nota de crédito.
+
+Desde **v2.2.0** la lib te da con qué distinguirlo. Ante un fallo de persistencia, **consultá antes de reintentar**:
+
+```csharp
+// 1. ¿ARCA está más adelante que mi último número guardado?
+var ultimoEnArca = await numbering.GetLastAuthorizedNumberAsync(
+    issuingCompany, BillingDocumentTypeARCAEnum.FC, bookPrefix: 3);
+
+if (ultimoEnArca > miUltimoNumeroGuardado)
+{
+    // 2. Sí: ARCA autorizó algo que no llegué a guardar. Lo recupero en vez de re-emitir.
+    var comprobante = await numbering.GetAuthorizedAsync(
+        issuingCompany, BillingDocumentTypeARCAEnum.FC, bookPrefix: 3, ultimoEnArca);
+
+    if (comprobante.IsApproved)
+    {
+        // Reconciliar: guardar comprobante.CAE / CAEExpirationDate en el registro local.
+        // NO llamar AuthorizeAsync — eso emitiría un CAE duplicado.
+    }
+}
+else
+{
+    // 3. No: la autorización nunca ocurrió, el reintento es seguro.
+    await numbering.AuthorizeAsync(request);
+}
+```
+
+⚠️ **`GetAuthorizedAsync` no devuelve el importe.** El proxy de `FECompConsultar` expone el CAE, su vencimiento, la fecha de proceso, el punto de venta y el tipo — no `ImpTotal`. Para reconciliar alcanza, porque el importe ya lo tenés en tu propio comprobante; si necesitás validarlo contra ARCA, mirá la deuda técnica en el [ROADMAP](ROADMAP.md).
+
+⚠️ **La lib no reintenta sola, a propósito.** El reintento queda del lado del consumidor justamente para que esta decisión —consultar o re-emitir— la tome quien conoce el estado de su base.
 
 ---
 

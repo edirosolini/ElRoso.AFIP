@@ -175,6 +175,72 @@ internal sealed class BillingDocumentNumberingService : IBillingDocumentNumberin
     // Helper de caché de tokens
     // ------------------------------------------------------------------ //
 
+    // ------------------------------------------------------------------ //
+    // Query side — reconciliation of already-authorized vouchers
+    // Lado consulta — reconciliación de comprobantes ya autorizados
+    // ------------------------------------------------------------------ //
+
+    /// <inheritdoc/>
+    public async Task<int> GetLastAuthorizedNumberAsync(
+        IssuingCompanyRequest issuingCompany,
+        BillingDocumentTypeARCAEnum billingDocumentType,
+        int billingDocumentBookPrefix,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(issuingCompany);
+
+        var ticket = await GetOrRefreshTokenAsync("wsfe", issuingCompany.DocumentNumber, ct);
+
+        return await wsfe.GetLastNumberAsync(
+            ticket.Sign,
+            ticket.Token,
+            issuingCompany.DocumentNumber,
+            (int)billingDocumentType,
+            billingDocumentBookPrefix,
+            ct);
+    }
+
+    /// <inheritdoc/>
+    public async Task<AuthorizedBillingDocumentResponse> GetAuthorizedAsync(
+        IssuingCompanyRequest issuingCompany,
+        BillingDocumentTypeARCAEnum billingDocumentType,
+        int billingDocumentBookPrefix,
+        long billingDocumentNumber,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(issuingCompany);
+
+        var ticket = await GetOrRefreshTokenAsync("wsfe", issuingCompany.DocumentNumber, ct);
+
+        var result = await wsfe.ConsultarComprobanteAsync(
+            ticket.Sign,
+            ticket.Token,
+            issuingCompany.DocumentNumber,
+            (int)billingDocumentType,
+            billingDocumentBookPrefix,
+            billingDocumentNumber,
+            ct);
+
+        // EN: ARCA echoes back the point of sale and voucher type it actually found. Prefer those
+        //     over what was asked for, so a mismatch is visible to the caller instead of hidden.
+        // ES: ARCA devuelve el punto de venta y el tipo que efectivamente encontró. Se prefieren
+        //     esos sobre lo pedido, así una discrepancia queda visible en vez de tapada.
+        return new AuthorizedBillingDocumentResponse
+        {
+            IsApproved = result.IsApproved,
+            CAE = result.Cae,
+            CAEExpirationDate = result.CaeExpiration,
+            ProcessedDate = result.ProcessedDate,
+            BillingDocumentBookPrefix = result.BookPrefix != 0 ? result.BookPrefix : billingDocumentBookPrefix,
+            BillingDocumentType = result.DocumentType != 0
+                ? (BillingDocumentTypeARCAEnum)result.DocumentType
+                : billingDocumentType,
+            BillingDocumentNumber = billingDocumentNumber,
+            Observations = result.Observations,
+            Errors = result.Errors,
+        };
+    }
+
     private async Task<LoginTicketResponse> GetOrRefreshTokenAsync(string service, long companyId, CancellationToken ct)
     {
         var cached = await tokenCache.GetAsync(service, companyId, ct);

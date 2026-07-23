@@ -178,6 +178,95 @@ internal sealed class WsfeOperations : IWsfeOperations
         }
     }
 
+    public async Task<WsfeVoucherResult> ConsultarComprobanteAsync(
+        string sign,
+        string token,
+        long cuit,
+        int docType,
+        int bookPrefix,
+        long number,
+        CancellationToken ct)
+    {
+        try
+        {
+            var client = CreateClient();
+            var result = await client.FECompConsultarAsync(new WSFEv1.FECompConsultarRequest
+            {
+                Body = new WSFEv1.FECompConsultarRequestBody
+                {
+                    Auth = new WSFEv1.FEAuthRequest { Sign = sign, Token = token, Cuit = cuit },
+                    FeCompConsReq = new WSFEv1.FECompConsultaReq
+                    {
+                        CbteTipo = docType,
+                        PtoVta = bookPrefix,
+                        CbteNro = number,
+                    },
+                },
+            });
+
+            var wsResult = result.Body.FECompConsultarResult;
+
+            // EN: A query for a voucher that does not exist comes back as an ARCA error, not as
+            //     an exception — surface it as errors so the caller can tell "not authorized"
+            //     apart from "the call failed".
+            // ES: Consultar un comprobante inexistente vuelve como error de ARCA, no como
+            //     excepción — se expone como errores para que el llamador distinga "no está
+            //     autorizado" de "la llamada falló".
+            if (wsResult.Errors is { Length: > 0 })
+            {
+                var errors = wsResult.Errors.Select(e => $"{e.Code}: {e.Msg}").ToList();
+                return new WsfeVoucherResult { IsApproved = false, Errors = errors };
+            }
+
+            var found = wsResult.ResultGet;
+            if (found is null)
+                return new WsfeVoucherResult { IsApproved = false };
+
+            var observations = found.Observaciones?
+                .Select(o => $"{o.Code}: {o.Msg}")
+                .ToList() ?? [];
+
+            return new WsfeVoucherResult
+            {
+                IsApproved = found.Resultado == "A",
+                Cae = found.CodAutorizacion,
+                CaeExpiration = TryParseArcaDate(found.FchVto),
+                ProcessedDate = TryParseArcaDate(found.FchProceso),
+                BookPrefix = found.PtoVta,
+                DocumentType = found.CbteTipo,
+                Observations = observations,
+            };
+        }
+        catch (ARCAServiceException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new ARCAServiceException("ARCA WSFEv1 FECompConsultar failed.", ex);
+        }
+    }
+
+    /// <summary>
+    /// EN: Parses an ARCA date field. Supports both yyyyMMdd and yyyyMMddHHmmss — FchVto comes
+    ///     as the former and FchProceso as the latter.
+    /// ES: Parsea un campo fecha de ARCA. Soporta yyyyMMdd y yyyyMMddHHmmss — FchVto viene con
+    ///     el primero y FchProceso con el segundo.
+    /// </summary>
+    internal static DateTime? TryParseArcaDate(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return null;
+
+        if (DateTime.TryParseExact(value, "yyyyMMddHHmmss", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
+            return dt;
+
+        if (DateTime.TryParseExact(value, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out dt))
+            return dt;
+
+        return null;
+    }
+
     private WSFEv1.ServiceSoapClient CreateClient()
     {
         var client = new WSFEv1.ServiceSoapClient(

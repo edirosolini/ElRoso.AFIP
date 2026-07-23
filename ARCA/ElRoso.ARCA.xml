@@ -16,6 +16,72 @@
         <member name="P:ElRoso.ARCA.Billing.BillingDocumentNumberingRequest.Version">
             <summary>QR code schema version. / Versión del esquema del QR.</summary>
         </member>
+        <member name="T:ElRoso.ARCA.Billing.AuthorizedBillingDocumentResponse">
+            <summary>
+            EN: A voucher ARCA has already authorized, as returned by WSFEv1 FECompConsultar.
+                Use it to reconcile a document that ARCA approved but the caller never persisted
+                (e.g. the local save failed after the CAE was granted) — re-authorizing instead
+                would burn a second CAE for the same sale.
+            ES: Un comprobante que ARCA ya autorizó, tal como lo devuelve WSFEv1 FECompConsultar.
+                Sirve para reconciliar un comprobante que ARCA aprobó pero el llamador nunca
+                persistió (p. ej. el guardado local falló después de otorgado el CAE) —
+                re-autorizar en lugar de reconciliar quema un segundo CAE por la misma venta.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.AuthorizedBillingDocumentResponse.IsApproved">
+            <summary>
+            EN: True when ARCA reports the voucher as approved (Resultado == "A").
+            ES: True cuando ARCA reporta el comprobante como aprobado (Resultado == "A").
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.AuthorizedBillingDocumentResponse.CAE">
+            <summary>
+            EN: Authorization code (CAE) ARCA granted to this voucher.
+            ES: Código de autorización (CAE) que ARCA otorgó a este comprobante.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.AuthorizedBillingDocumentResponse.CAEExpirationDate">
+            <summary>
+            EN: CAE expiration date.
+            ES: Fecha de vencimiento del CAE.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.AuthorizedBillingDocumentResponse.ProcessedDate">
+            <summary>
+            EN: Date ARCA processed the authorization.
+            ES: Fecha en que ARCA procesó la autorización.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.AuthorizedBillingDocumentResponse.BillingDocumentBookPrefix">
+            <summary>
+            EN: Point of sale the voucher belongs to.
+            ES: Punto de venta al que pertenece el comprobante.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.AuthorizedBillingDocumentResponse.BillingDocumentType">
+            <summary>
+            EN: Voucher type as reported by ARCA.
+            ES: Tipo de comprobante informado por ARCA.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.AuthorizedBillingDocumentResponse.BillingDocumentNumber">
+            <summary>
+            EN: Voucher number that was queried.
+            ES: Número de comprobante consultado.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.AuthorizedBillingDocumentResponse.Observations">
+            <summary>
+            EN: Observations ARCA attached to the voucher, if any.
+            ES: Observaciones que ARCA adjuntó al comprobante, si hay.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.AuthorizedBillingDocumentResponse.Errors">
+            <summary>
+            EN: Errors returned by the query itself (not by the voucher).
+            ES: Errores devueltos por la consulta en sí (no por el comprobante).
+            </summary>
+        </member>
         <member name="P:ElRoso.ARCA.Billing.BillingDocumentNumberingResponse.Errors">
             <summary>
             Business errors returned by ARCA (observaciones, códigos de error).
@@ -42,6 +108,43 @@
             <param name="request">Billing document to authorize.</param>
             <param name="ct">Cancellation token.</param>
             <returns>Response with CAE and document number, or error list.</returns>
+        </member>
+        <member name="M:ElRoso.ARCA.Billing.IBillingDocumentNumberingService.GetLastAuthorizedNumberAsync(ElRoso.ARCA.Core.IssuingCompanyRequest,ElRoso.ARCA.Core.BillingDocumentTypeARCAEnum,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            EN: Returns the last voucher number ARCA authorized for a given type + point of sale.
+                Compare it against your own last persisted number: if ARCA is ahead, an
+                authorization was granted that you never stored — re-authorizing would issue a
+                duplicate CAE for the same sale. Wraps WSFEv1 FECompUltimoAutorizado.
+            ES: Devuelve el último número de comprobante que ARCA autorizó para un tipo + punto
+                de venta. Comparalo contra tu último número persistido: si ARCA va adelante, se
+                otorgó una autorización que nunca guardaste — re-autorizar emitiría un CAE
+                duplicado por la misma venta. Envuelve WSFEv1 FECompUltimoAutorizado.
+            </summary>
+            <param name="issuingCompany">Issuing company (CUIT that holds the delegation).</param>
+            <param name="billingDocumentType">Voucher type to query.</param>
+            <param name="billingDocumentBookPrefix">Point of sale to query.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>Last authorized number; 0 when the series has no vouchers yet.</returns>
+        </member>
+        <member name="M:ElRoso.ARCA.Billing.IBillingDocumentNumberingService.GetAuthorizedAsync(ElRoso.ARCA.Core.IssuingCompanyRequest,ElRoso.ARCA.Core.BillingDocumentTypeARCAEnum,System.Int32,System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            EN: Retrieves a voucher ARCA already authorized, so its CAE can be reconciled into a
+                local record without re-emitting. Wraps WSFEv1 FECompConsultar.
+            ES: Recupera un comprobante que ARCA ya autorizó, para poder reconciliar su CAE en un
+                registro local sin volver a emitir. Envuelve WSFEv1 FECompConsultar.
+            </summary>
+            <param name="issuingCompany">Issuing company (CUIT that holds the delegation).</param>
+            <param name="billingDocumentType">Voucher type to query.</param>
+            <param name="billingDocumentBookPrefix">Point of sale to query.</param>
+            <param name="billingDocumentNumber">Voucher number to query.</param>
+            <param name="ct">Cancellation token.</param>
+            <returns>The authorized voucher, or errors when ARCA rejects the query.</returns>
+        </member>
+        <member name="M:ElRoso.ARCA.Billing.BillingDocumentNumberingService.GetLastAuthorizedNumberAsync(ElRoso.ARCA.Core.IssuingCompanyRequest,ElRoso.ARCA.Core.BillingDocumentTypeARCAEnum,System.Int32,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:ElRoso.ARCA.Billing.BillingDocumentNumberingService.GetAuthorizedAsync(ElRoso.ARCA.Core.IssuingCompanyRequest,ElRoso.ARCA.Core.BillingDocumentTypeARCAEnum,System.Int32,System.Int64,System.Threading.CancellationToken)">
+            <inheritdoc/>
         </member>
         <member name="T:ElRoso.ARCA.Billing.IPadronOperations">
             <summary>
@@ -84,6 +187,44 @@
             ES: Solicita un CAE para un documento. Devuelve resultado POCO con errores / observaciones / aprobación.
             </summary>
         </member>
+        <member name="M:ElRoso.ARCA.Billing.IWsfeOperations.ConsultarComprobanteAsync(System.String,System.String,System.Int64,System.Int32,System.Int32,System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            EN: Queries one already-authorized voucher. Returns POCO result so the consumer never
+                sees WCF types.
+            ES: Consulta un comprobante ya autorizado. Devuelve POCO para que el consumidor no vea
+                tipos WCF.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Billing.WsfeVoucherResult">
+            <summary>
+            EN: POCO result of a voucher query to WSFEv1 — hides WCF types from the consumer.
+            ES: Resultado POCO de una consulta de comprobante a WSFEv1 — oculta los tipos WCF.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.WsfeVoucherResult.IsApproved">
+            <summary>True when ARCA reports the voucher approved (Resultado == "A").</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.WsfeVoucherResult.Cae">
+            <summary>The CAE code ARCA granted. / Código CAE otorgado por ARCA.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.WsfeVoucherResult.CaeExpiration">
+            <summary>CAE expiration date. / Fecha de vencimiento del CAE.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.WsfeVoucherResult.ProcessedDate">
+            <summary>Date ARCA processed the authorization. / Fecha de proceso en ARCA.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.WsfeVoucherResult.BookPrefix">
+            <summary>Point of sale reported by ARCA. / Punto de venta informado por ARCA.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.WsfeVoucherResult.DocumentType">
+            <summary>Voucher type reported by ARCA. / Tipo de comprobante informado por ARCA.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.WsfeVoucherResult.Observations">
+            <summary>Observations attached to the voucher. / Observaciones del comprobante.</summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Billing.WsfeVoucherResult.Errors">
+            <summary>Errors returned by the query. / Errores devueltos por la consulta.</summary>
+        </member>
         <member name="T:ElRoso.ARCA.Billing.WsfeCaeResult">
             <summary>
             EN: POCO result of a CAE request to WSFEv1 — hides WCF types from the consumer.
@@ -112,6 +253,14 @@
             <summary>
             EN: POCO result of an Authorize request to WSFEXv1.
             ES: Resultado POCO de una solicitud Authorize a WSFEXv1.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Billing.WsfeOperations.TryParseArcaDate(System.String)">
+            <summary>
+            EN: Parses an ARCA date field. Supports both yyyyMMdd and yyyyMMddHHmmss — FchVto comes
+                as the former and FchProceso as the latter.
+            ES: Parsea un campo fecha de ARCA. Soporta yyyyMMdd y yyyyMMddHHmmss — FchVto viene con
+                el primero y FchProceso con el segundo.
             </summary>
         </member>
         <member name="T:ElRoso.ARCA.Core.FileTokenCache">
