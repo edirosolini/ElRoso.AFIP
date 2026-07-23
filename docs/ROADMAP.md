@@ -11,12 +11,14 @@
 | **v1.0.0** | WSAA + WSFEv1 + WSFEXv1 + Padrón A5 — emisión completa |
 | **v1.1.0** | Read-side: WSCDC (validación) + WSCComu (e-Ventanilla / DFE) |
 | **v2.0.0** | Refactor modular: sub-namespaces `Core` / `Billing` / `Read` |
+| **v2.1.x** | Coverage + polish · fix WSAA para WSCComu (`veconsumerws`) · soporte MTOM |
+| **v2.2.0** | Consulta de comprobantes emitidos: `GetLastAuthorizedNumberAsync` + `GetAuthorizedAsync` |
 
 ---
 
-## 🎯 Próximo: `v2.1.0` — Coverage + polish
+## ✅ `v2.1.0` — Coverage + polish (entregado)
 
-Sin features nuevos. Foco en pulir la lib post-refactor antes de seguir agregando WSs.
+Sin features nuevos. Foco en pulir la lib post-refactor. Los ítems que quedaron abiertos siguen en **Deuda técnica conocida**, más abajo.
 
 | Item | Detalle | Estimación |
 |------|---------|------------|
@@ -29,7 +31,7 @@ Sin features nuevos. Foco en pulir la lib post-refactor antes de seguir agregand
 
 ---
 
-## `v2.2.0` — Antifraude + sincronización
+## `v2.3.0` — Antifraude + sincronización
 
 | Feature | WS | Por qué |
 |---------|----|---------|
@@ -41,7 +43,7 @@ Estimación: 25 – 40 hs total.
 
 ---
 
-## `v2.3.0` y siguientes — Por demanda comunitaria
+## `v2.4.0` y siguientes — Por demanda comunitaria
 
 Implementación según pedido vía Issues / Discussions:
 
@@ -90,6 +92,8 @@ Si tu caso de uso requiere alguno de estos, **abrí una [Discussion](https://git
 
 ## 🛠 Deuda técnica conocida
 
+- **`FECompConsultar` no devuelve importes** — el proxy generado expone `FECompConsResponse` con `Resultado`, `CodAutorizacion`, `FchVto`, `FchProceso`, `PtoVta`, `CbteTipo` y `Observaciones`, **sin `ImpTotal` ni `CbteFch`**. Para reconciliar un CAE alcanza (el importe lo tiene el propio consumidor), pero no permite validarlo contra ARCA. Regenerar el Connected Service y verificar si el WSDL real los trae.
+- **Wrappers SOAP sin cobertura unitaria** — `WsfeOperations`, `WsfexOperations` y `PadronOperations` no se testean sin extraer un factory para los clientes WCF. Afecta por igual a `SolicitarCaeAsync`, `GetLastNumberAsync` y `ConsultarComprobanteAsync`.
 - **400+ warnings de StyleCop** (`SA1101`, `SA1503`, `SA1407`) heredados. No fallan el build (`<TreatWarningsAsErrors>false</TreatWarningsAsErrors>`) pero ensucian el output.
 - **`tests` con duplicate `using` warnings (CS0105)** post-refactor v2.0.0. El bulk replace generó múltiples `using` por archivo y el dedup no fue 100% perfecto.
 - **`FileTokenCacheTests.Dispose()` warning CA1816** — agregar `GC.SuppressFinalize(this)`.

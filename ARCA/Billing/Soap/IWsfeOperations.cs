@@ -36,6 +36,52 @@ internal interface IWsfeOperations
         BillingDocumentNumberingRequest doc,
         int next,
         CancellationToken ct);
+
+    /// <summary>
+    /// EN: Queries one already-authorized voucher. Returns POCO result so the consumer never
+    ///     sees WCF types.
+    /// ES: Consulta un comprobante ya autorizado. Devuelve POCO para que el consumidor no vea
+    ///     tipos WCF.
+    /// </summary>
+    Task<WsfeVoucherResult> ConsultarComprobanteAsync(
+        string sign,
+        string token,
+        long cuit,
+        int docType,
+        int bookPrefix,
+        long number,
+        CancellationToken ct);
+}
+
+/// <summary>
+/// EN: POCO result of a voucher query to WSFEv1 — hides WCF types from the consumer.
+/// ES: Resultado POCO de una consulta de comprobante a WSFEv1 — oculta los tipos WCF.
+/// </summary>
+internal sealed record WsfeVoucherResult
+{
+    /// <summary>True when ARCA reports the voucher approved (Resultado == "A").</summary>
+    public bool IsApproved { get; init; }
+
+    /// <summary>The CAE code ARCA granted. / Código CAE otorgado por ARCA.</summary>
+    public string? Cae { get; init; }
+
+    /// <summary>CAE expiration date. / Fecha de vencimiento del CAE.</summary>
+    public DateTime? CaeExpiration { get; init; }
+
+    /// <summary>Date ARCA processed the authorization. / Fecha de proceso en ARCA.</summary>
+    public DateTime? ProcessedDate { get; init; }
+
+    /// <summary>Point of sale reported by ARCA. / Punto de venta informado por ARCA.</summary>
+    public int BookPrefix { get; init; }
+
+    /// <summary>Voucher type reported by ARCA. / Tipo de comprobante informado por ARCA.</summary>
+    public int DocumentType { get; init; }
+
+    /// <summary>Observations attached to the voucher. / Observaciones del comprobante.</summary>
+    public IReadOnlyList<string> Observations { get; init; } = [];
+
+    /// <summary>Errors returned by the query. / Errores devueltos por la consulta.</summary>
+    public IReadOnlyList<string> Errors { get; init; } = [];
 }
 
 /// <summary>

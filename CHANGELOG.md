@@ -6,6 +6,31 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [Unreleased]
 
+## [2.2.0] — 2026-07-23
+
+✨ **Consulta de comprobantes ya autorizados** — `IBillingDocumentNumberingService` suma dos operaciones de lectura sobre WSFEv1 para poder **reconciliar** un comprobante que ARCA autorizó pero el consumidor nunca llegó a persistir.
+
+### Added
+
+- `IBillingDocumentNumberingService.GetLastAuthorizedNumberAsync(...)` — último número autorizado para un tipo + punto de venta. Envuelve `FECompUltimoAutorizado`, que ya se usaba internamente para numerar y hasta ahora no era accesible desde afuera.
+- `IBillingDocumentNumberingService.GetAuthorizedAsync(...)` — trae un comprobante autorizado con su **CAE**, vencimiento y fecha de proceso. Envuelve `FECompConsultar`, que estaba en el proxy generado pero sin usar.
+- `AuthorizedBillingDocumentResponse` — POCO de respuesta, sin tipos WCF a la vista.
+
+### Why
+
+ARCA otorga el CAE **antes** de que el consumidor pueda persistirlo. Si el guardado local falla en esa ventana, el comprobante queda autorizado en ARCA y ausente en la base; el reintento natural —volver a autorizar— emite un **segundo CAE para la misma venta**, que es un duplicado fiscal real y hay que anularlo con nota de crédito.
+
+Sin estas operaciones no había forma de distinguir "esto nunca se emitió" de "esto se emitió y no lo guardé". Ahora el flujo correcto ante un fallo de persistencia es:
+
+1. `GetLastAuthorizedNumberAsync` → ¿ARCA está más adelante que mi último número guardado?
+2. Si lo está, `GetAuthorizedAsync` → recuperás el CAE y lo reconciliás localmente, sin re-emitir.
+
+### Notes
+
+- **No es breaking.** Solo agrega miembros a la interfaz; los implementadores propios de `IBillingDocumentNumberingService` (poco probables, la implementación es `internal`) tendrían que agregarlos.
+- ⚠️ **`FECompConsultar` no devuelve importes en el proxy actual.** El WSDL generado expone `Resultado`, `CodAutorizacion`, `FchVto`, `FchProceso`, `PtoVta`, `CbteTipo` y `Observaciones` — sin `ImpTotal`. Para reconciliar alcanza (el importe ya lo tenés en tu propio comprobante), pero si necesitás validarlo contra ARCA hay que regenerar el Connected Service. Anotado como deuda en el ROADMAP.
+- **Cobertura:** el wrapper SOAP nuevo queda sin tests unitarios, igual que `SolicitarCaeAsync` y `GetLastNumberAsync` — los clientes WCF no se mockean sin extraer un factory (deuda ya listada en el ROADMAP). Sí están cubiertos el service, el mapeo de la respuesta y el parser de fechas.
+
 ## [2.1.2] — 2026-05-14
 
 🐛 **Fix: WSCComu cliente SOAP ahora soporta MTOM** — el endpoint de producción siempre responde con `multipart/related; type="application/xop+xml"` (MTOM), incluso cuando no hay adjuntos. El binding generado por defecto solo aceptaba `application/soap+xml` plano y explotaba con `ProtocolException` al parsear cualquier respuesta exitosa.

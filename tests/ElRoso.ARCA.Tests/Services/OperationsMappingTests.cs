@@ -5,6 +5,7 @@ using ElRoso.ARCA.Core;
 using ElRoso.ARCA.Read;
 using ElectronicMailboxOps = ElRoso.ARCA.Read.ElectronicMailboxOperations;
 using InvoiceVerificationOps = ElRoso.ARCA.Read.InvoiceVerificationOperations;
+using WsfeOps = ElRoso.ARCA.Billing.WsfeOperations;
 
 namespace ElRoso.ARCA.Tests.Services;
 
@@ -279,5 +280,35 @@ public class OperationsMappingTests
     public void TryParseFchProceso_should_return_null_for_invalid_input(string? input)
     {
         InvoiceVerificationOps.TryParseFchProceso(input).Should().BeNull();
+    }
+
+    // =============================================================
+    // WsfeOperations mapping helpers
+    // EN: FECompConsultar returns FchVto as yyyyMMdd but FchProceso as yyyyMMddHHmmss — the
+    //     parser has to take both or a reconciled CAE loses its expiration date.
+    // ES: FECompConsultar devuelve FchVto como yyyyMMdd pero FchProceso como yyyyMMddHHmmss —
+    //     el parser tiene que aceptar ambos o un CAE reconciliado pierde su vencimiento.
+    // =============================================================
+
+    [Theory]
+    [InlineData("20260802", 2026, 8, 2, 0, 0, 0)]
+    [InlineData("20260723103949", 2026, 7, 23, 10, 39, 49)]
+    public void TryParseArcaDate_should_parse_both_ARCA_date_formats(
+        string input, int y, int mo, int d, int h, int mi, int sec)
+    {
+        var parsed = WsfeOps.TryParseArcaDate(input);
+
+        parsed.Should().NotBeNull();
+        parsed!.Value.Should().Be(new DateTime(y, mo, d, h, mi, sec));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("garbage")]
+    [InlineData("2026-08-02")]
+    public void TryParseArcaDate_should_return_null_for_invalid_input(string? input)
+    {
+        WsfeOps.TryParseArcaDate(input).Should().BeNull();
     }
 }

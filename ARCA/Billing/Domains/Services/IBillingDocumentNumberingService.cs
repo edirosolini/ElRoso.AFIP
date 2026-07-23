@@ -23,5 +23,45 @@ using ElRoso.ARCA.Read;
         Task<BillingDocumentNumberingResponse> AuthorizeAsync(
             BillingDocumentNumberingRequest request,
             CancellationToken ct = default);
+
+        /// <summary>
+        /// EN: Returns the last voucher number ARCA authorized for a given type + point of sale.
+        ///     Compare it against your own last persisted number: if ARCA is ahead, an
+        ///     authorization was granted that you never stored — re-authorizing would issue a
+        ///     duplicate CAE for the same sale. Wraps WSFEv1 FECompUltimoAutorizado.
+        /// ES: Devuelve el último número de comprobante que ARCA autorizó para un tipo + punto
+        ///     de venta. Comparalo contra tu último número persistido: si ARCA va adelante, se
+        ///     otorgó una autorización que nunca guardaste — re-autorizar emitiría un CAE
+        ///     duplicado por la misma venta. Envuelve WSFEv1 FECompUltimoAutorizado.
+        /// </summary>
+        /// <param name="issuingCompany">Issuing company (CUIT that holds the delegation).</param>
+        /// <param name="billingDocumentType">Voucher type to query.</param>
+        /// <param name="billingDocumentBookPrefix">Point of sale to query.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>Last authorized number; 0 when the series has no vouchers yet.</returns>
+        Task<int> GetLastAuthorizedNumberAsync(
+            IssuingCompanyRequest issuingCompany,
+            BillingDocumentTypeARCAEnum billingDocumentType,
+            int billingDocumentBookPrefix,
+            CancellationToken ct = default);
+
+        /// <summary>
+        /// EN: Retrieves a voucher ARCA already authorized, so its CAE can be reconciled into a
+        ///     local record without re-emitting. Wraps WSFEv1 FECompConsultar.
+        /// ES: Recupera un comprobante que ARCA ya autorizó, para poder reconciliar su CAE en un
+        ///     registro local sin volver a emitir. Envuelve WSFEv1 FECompConsultar.
+        /// </summary>
+        /// <param name="issuingCompany">Issuing company (CUIT that holds the delegation).</param>
+        /// <param name="billingDocumentType">Voucher type to query.</param>
+        /// <param name="billingDocumentBookPrefix">Point of sale to query.</param>
+        /// <param name="billingDocumentNumber">Voucher number to query.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>The authorized voucher, or errors when ARCA rejects the query.</returns>
+        Task<AuthorizedBillingDocumentResponse> GetAuthorizedAsync(
+            IssuingCompanyRequest issuingCompany,
+            BillingDocumentTypeARCAEnum billingDocumentType,
+            int billingDocumentBookPrefix,
+            long billingDocumentNumber,
+            CancellationToken ct = default);
     }
 }

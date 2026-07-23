@@ -469,4 +469,146 @@ public class BillingDocumentNumberingServiceTests
             "wsfe", It.IsAny<long>(), It.IsAny<ElRoso.ARCA.Core.LoginTicketResponse>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
+
+    // ------------------------------------------------------------------ //
+    // Query side — reconciliation of already-authorized vouchers
+    // EN: These exist because ARCA grants the CAE BEFORE the caller persists it. If the local
+    //     save dies in between, re-authorizing issues a SECOND CAE for the same sale — a real
+    //     fiscal duplicate. Querying first is the only way to tell the two apart.
+    // ES: Existen porque ARCA otorga el CAE ANTES de que el llamador lo persista. Si el guardado
+    //     local muere en el medio, re-autorizar emite un SEGUNDO CAE por la misma venta — un
+    //     duplicado fiscal real. Consultar primero es la única forma de distinguirlos.
+    // ------------------------------------------------------------------ //
+
+    [Fact]
+    public async Task GetLastAuthorizedNumber_should_return_what_ARCA_reports()
+    {
+        SetupTokenCacheHit();
+
+        wsfeMock
+            .Setup(w => w.GetLastNumberAsync(It.IsAny<string>(), It.IsAny<string>(), 20123456789L,
+                                             (int)BillingDocumentTypeARCAEnum.FC, 3, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(158);
+
+        var service = CreateService();
+        var last = await service.GetLastAuthorizedNumberAsync(
+            new IssuingCompanyRequest { DocumentType = DocumentTypeARCAEnum.CUIT, DocumentNumber = 20123456789 },
+            BillingDocumentTypeARCAEnum.FC,
+            3);
+
+        last.Should().Be(158);
+    }
+
+    [Fact]
+    public async Task GetAuthorized_should_map_the_CAE_so_it_can_be_reconciled_locally()
+    {
+        SetupTokenCacheHit();
+
+        wsfeMock
+            .Setup(w => w.ConsultarComprobanteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<long>(),
+                                                    It.IsAny<int>(), It.IsAny<int>(), It.IsAny<long>(),
+                                                    It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new WsfeVoucherResult
+            {
+                IsApproved = true,
+                Cae = "86305060629012",
+                CaeExpiration = new DateTime(2026, 8, 2),
+                ProcessedDate = new DateTime(2026, 7, 23, 10, 39, 49),
+                BookPrefix = 3,
+                DocumentType = (int)BillingDocumentTypeARCAEnum.FC,
+            });
+
+        var service = CreateService();
+        var found = await service.GetAuthorizedAsync(
+            new IssuingCompanyRequest { DocumentType = DocumentTypeARCAEnum.CUIT, DocumentNumber = 20123456789 },
+            BillingDocumentTypeARCAEnum.FC,
+            3,
+            157);
+
+        found.IsApproved.Should().BeTrue();
+        found.CAE.Should().Be("86305060629012");
+        found.CAEExpirationDate.Should().Be(new DateTime(2026, 8, 2));
+        found.ProcessedDate.Should().Be(new DateTime(2026, 7, 23, 10, 39, 49));
+        found.BillingDocumentNumber.Should().Be(157);
+        found.BillingDocumentBookPrefix.Should().Be(3);
+        found.BillingDocumentType.Should().Be(BillingDocumentTypeARCAEnum.FC);
+        found.Errors.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetAuthorized_should_surface_ARCA_errors_instead_of_pretending_it_is_approved()
+    {
+        SetupTokenCacheHit();
+
+        // EN: Querying a voucher that was never authorized comes back as an ARCA error, not an
+        //     exception. It must NOT look like an approved voucher with a null CAE.
+        // ES: Consultar un comprobante nunca autorizado vuelve como error de ARCA, no como
+        //     excepción. NO debe parecer un comprobante aprobado con CAE nulo.
+        wsfeMock
+            .Setup(w => w.ConsultarComprobanteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<long>(),
+                                                    It.IsAny<int>(), It.IsAny<int>(), It.IsAny<long>(),
+                                                    It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new WsfeVoucherResult
+            {
+                IsApproved = false,
+                Errors = ["602: Sin Resultados"],
+            });
+
+        var service = CreateService();
+        var found = await service.GetAuthorizedAsync(
+            new IssuingCompanyRequest { DocumentType = DocumentTypeARCAEnum.CUIT, DocumentNumber = 20123456789 },
+            BillingDocumentTypeARCAEnum.FC,
+            3,
+            9999);
+
+        found.IsApproved.Should().BeFalse();
+        found.CAE.Should().BeNull();
+        found.Errors.Should().ContainSingle().Which.Should().Contain("Sin Resultados");
+    }
+
+    [Fact]
+    public async Task GetAuthorized_should_keep_the_point_of_sale_ARCA_actually_returned()
+    {
+        SetupTokenCacheHit();
+
+        // EN: If ARCA answers with a different point of sale / type than requested, that
+        //     mismatch must reach the caller — silently echoing the request would hide it.
+        // ES: Si ARCA responde con un punto de venta / tipo distinto al pedido, esa discrepancia
+        //     tiene que llegar al llamador — devolver lo pedido en silencio la taparía.
+        wsfeMock
+            .Setup(w => w.ConsultarComprobanteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<long>(),
+                                                    It.IsAny<int>(), It.IsAny<int>(), It.IsAny<long>(),
+                                                    It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new WsfeVoucherResult
+            {
+                IsApproved = true,
+                Cae = "86305060629012",
+                BookPrefix = 4,
+                DocumentType = (int)BillingDocumentTypeARCAEnum.NCC,
+            });
+
+        var service = CreateService();
+        var found = await service.GetAuthorizedAsync(
+            new IssuingCompanyRequest { DocumentType = DocumentTypeARCAEnum.CUIT, DocumentNumber = 20123456789 },
+            BillingDocumentTypeARCAEnum.FC,
+            3,
+            157);
+
+        found.BillingDocumentBookPrefix.Should().Be(4);
+        found.BillingDocumentType.Should().Be(BillingDocumentTypeARCAEnum.NCC);
+    }
+
+    [Fact]
+    public async Task Query_methods_should_reject_a_null_issuing_company()
+    {
+        var service = CreateService();
+
+        await FluentActions
+            .Awaiting(() => service.GetLastAuthorizedNumberAsync(null!, BillingDocumentTypeARCAEnum.FC, 3))
+            .Should().ThrowAsync<ArgumentNullException>();
+
+        await FluentActions
+            .Awaiting(() => service.GetAuthorizedAsync(null!, BillingDocumentTypeARCAEnum.FC, 3, 157))
+            .Should().ThrowAsync<ArgumentNullException>();
+    }
 }
