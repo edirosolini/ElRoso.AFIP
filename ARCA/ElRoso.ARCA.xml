@@ -479,6 +479,26 @@
             URL o si proxyás a través de un middleware propio.
             </summary>
         </member>
+        <member name="M:ElRoso.ARCA.Core.LoginTicketService.NextUniqueId">
+            <summary>
+            EN: Returns the next WSAA uniqueId. A process-local counter restarted at 1 on every deploy,
+                which can trip the anti-replay control on WSAA's side; deriving it from unix seconds
+                keeps the sequence monotonic across restarts without any persisted state.
+            ES: Devuelve el próximo uniqueId del WSAA. Un contador en memoria reiniciaba en 1 en cada
+                deploy, lo que puede activar el control anti-replay del lado de WSAA; derivarlo de los
+                segundos unix mantiene la secuencia monótona entre reinicios sin persistir nada.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Core.LoginTicketService.ComputeUniqueId(System.Int64,System.Int64)">
+            <summary>
+            EN: The clock seeds the value; <paramref name="previous"/> guarantees it never repeats or
+                goes backwards when several tickets are requested inside the same second, or when the
+                host clock jumps back (NTP correction).
+            ES: El reloj siembra el valor; <paramref name="previous"/> garantiza que no se repita ni
+                retroceda cuando se piden varios tickets en el mismo segundo, o cuando el reloj del
+                host salta hacia atrás (corrección de NTP).
+            </summary>
+        </member>
         <member name="M:ElRoso.ARCA.Core.LoginTicketService.ParseExpirationTime(System.String)">
             <summary>
             EN: Parses the expirationTime returned by WSAA into a UTC instant. Plain

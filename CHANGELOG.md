@@ -24,6 +24,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
   - `LoginTicketResponse.ExpirationTime` es ahora siempre un instante **UTC** (`Kind = Utc`), venga el XML con offset, con `Z` o sin nada (sin offset se interpreta como hora argentina, que es lo que manda WSAA).
   - `FileTokenCache` compara contra `DateTime.UtcNow`. No queda ningún `-3` en el camino de expiración.
   - El `generationTime` / `expirationTime` del `loginTicketRequest` se arma con la zona resuelta por nombre (`America/Argentina/Buenos_Aires`) en vez de un `-3` fijo, así un cambio de horario de verano no lo rompe. Si el host no tiene base de zonas horarias, cae a un UTC-3 fijo.
+- **El `uniqueId` del `loginTicketRequest` ya no reinicia con el proceso.** Salía de un `Interlocked.Increment` sobre un `static int` que arrancaba en 0, así que después de cada deploy el primer pedido a WSAA volvía a mandar `uniqueId=1` — WSAA lo espera monótono creciente por (CUIT, servicio) y eso puede activar su control anti-replay. Ahora se deriva de los segundos unix, con un piso que garantiza que no se repita dentro del mismo segundo ni retroceda si el reloj del host salta hacia atrás. No persiste estado.
+
+  - ℹ️ Lo que **sí** conviene persistir es `TokenCacheDirectory`: el TA vive 12 h y WSAA no emite un segundo TA mientras el primero siga vigente. Perder la caché en un redeploy no es gratis. Ver [Cookbook → cache de tokens](./docs/COOKBOOK.md#cache-de-tokens).
+
   - ⚠️ **Los archivos de caché cambian de nombre a `ARCA_token_v2_*.bin`.** Los del formato anterior guardan el vencimiento en hora local: se ignoran en vez de leerse mal. Se pueden borrar.
 
 ## [2.2.0] — 2026-07-23

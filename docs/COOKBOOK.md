@@ -126,6 +126,20 @@ Sí, en todas las plataformas: el payload se protege con `IDataProtector` (purpo
 
 Esperado: el key ring de DataProtection quedó en el server viejo. Borrá el directorio y la próxima request va a refrescar contra WSAA. No es bug, es feature de seguridad.
 
+### "Redeployeo y pierdo el cache de tokens"
+
+El TA vive 12 h y **WSAA no emite un segundo TA mientras el primero siga vigente** para el mismo (CUIT, servicio): responde algo del tipo `El CEE ya posee un TA valido para el acceso al WSN solicitado`. Si `TokenCacheDirectory` vive en el filesystem efímero del container, cada deploy tira el TA que ARCA sigue considerando vivo.
+
+Persistí el directorio — y con él, el key ring de DataProtection:
+
+```yaml
+volumes:
+  - ./ARCA/tokens:/ARCA/tokens
+  - ./DataProtection/keys:/DataProtection/keys
+```
+
+> El `uniqueId` del `loginTicketRequest` **no** necesita persistencia: se deriva del reloj (segundos unix), así que sigue creciendo entre reinicios aunque el proceso arranque de cero.
+
 ### "Tengo concurrencia alta y se corrompen los archivos"
 
 No debería: la lib usa `SemaphoreSlim` por clave para serializar escrituras/lecturas. Si ves corrupción, abrí un issue con repro.

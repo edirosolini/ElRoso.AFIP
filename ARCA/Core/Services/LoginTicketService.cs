@@ -21,9 +21,11 @@ internal sealed class LoginTicketService : ILoginTicketService
     //     mano no puede.
     private static readonly TimeZoneInfo ArgentinaTimeZone = ResolveArgentinaTimeZone();
 
-    // Thread-safe counter for WSAA request unique IDs.
-    // Contador thread-safe para los IDs únicos de request al WSAA.
-    private static int uniqueIdCounter;
+    // EN: Last uniqueId handed out. Seeded from the clock rather than from 0 so a redeploy does
+    //     not rewind the sequence WSAA expects to keep growing per (CUIT, service).
+    // ES: Último uniqueId entregado. Se siembra del reloj y no de 0, así un redeploy no rebobina
+    //     la secuencia que WSAA espera creciente por (CUIT, servicio).
+    private static long lastUniqueId;
 
     // NTP response cache — avoids a UDP round-trip on every token refresh.
     // WSAA accepts timestamps within ±10 minutes of server time.
@@ -66,7 +68,7 @@ internal sealed class LoginTicketService : ILoginTicketService
         try
         {
             var ARCATime = ToArgentinaTime(await GetNetworkTimeAsync(ct));
-            var uniqueId = (uint)Interlocked.Increment(ref uniqueIdCounter);
+            var uniqueId = NextUniqueId();
 
             var doc = new XmlDocument();
             doc.LoadXml(XmlTemplate);
@@ -137,6 +139,38 @@ internal sealed class LoginTicketService : ILoginTicketService
             throw new ARCAAuthException("Failed to parse the WSAA LoginTicketResponse XML.", ex);
         }
     }
+
+    /// <summary>
+    /// EN: Returns the next WSAA uniqueId. A process-local counter restarted at 1 on every deploy,
+    ///     which can trip the anti-replay control on WSAA's side; deriving it from unix seconds
+    ///     keeps the sequence monotonic across restarts without any persisted state.
+    /// ES: Devuelve el próximo uniqueId del WSAA. Un contador en memoria reiniciaba en 1 en cada
+    ///     deploy, lo que puede activar el control anti-replay del lado de WSAA; derivarlo de los
+    ///     segundos unix mantiene la secuencia monótona entre reinicios sin persistir nada.
+    /// </summary>
+    internal static uint NextUniqueId()
+    {
+        var unixSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+        while (true)
+        {
+            var previous = Interlocked.Read(ref lastUniqueId);
+            var next = ComputeUniqueId(previous, unixSeconds);
+            if (Interlocked.CompareExchange(ref lastUniqueId, next, previous) == previous)
+                return (uint)next;
+        }
+    }
+
+    /// <summary>
+    /// EN: The clock seeds the value; <paramref name="previous"/> guarantees it never repeats or
+    ///     goes backwards when several tickets are requested inside the same second, or when the
+    ///     host clock jumps back (NTP correction).
+    /// ES: El reloj siembra el valor; <paramref name="previous"/> garantiza que no se repita ni
+    ///     retroceda cuando se piden varios tickets en el mismo segundo, o cuando el reloj del
+    ///     host salta hacia atrás (corrección de NTP).
+    /// </summary>
+    internal static long ComputeUniqueId(long previous, long unixSeconds) =>
+        Math.Max(unixSeconds, previous + 1);
 
     /// <summary>
     /// EN: Parses the expirationTime returned by WSAA into a UTC instant. Plain
