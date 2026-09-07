@@ -88,7 +88,7 @@ Tu CUIT no tiene habilitado el servicio en cuestión. En el portal:
 Causas comunes:
 
 1. **Tu reloj está desincronizado.** WSAA es estricto con el campo `GenerationTime`. La lib usa NTP cacheado, pero si NTP falla la lib cae a `DateTime.UtcNow`. Si tu server tiene drift > 5min, esto explota.
-2. **Estás usando el TA de homologación contra producción.** Cada ambiente tiene su propio TA. La lib usa archivos separados (`ARCA_token_wsfe_20123456789.bin`).
+2. **Estás usando el TA de homologación contra producción.** Cada ambiente tiene su propio TA. La lib usa archivos separados (`ARCA_token_v2_wsfe_20123456789.bin`).
 3. **El TA expiró mientras lo usabas.** Tiene ~12 horas de vida. La lib refresca automáticamente, pero si tu request es exactamente en el borde…
 
 ### "PKCS#7 signing failed"
@@ -107,10 +107,12 @@ Si el cert se cargó bien pero falla la firma:
 En el directorio configurado en `TokenCacheDirectory` (default: `Path.GetTempPath()`). Cada combinación servicio + CUIT genera un archivo:
 
 ```
-ARCA_token_wsfe_20123456789.bin
-ARCA_token_ws_sr_constancia_inscripcion_20123456789.bin
-ARCA_token_wsfex_20123456789.bin
+ARCA_token_v2_wsfe_20123456789.bin
+ARCA_token_v2_ws_sr_constancia_inscripcion_20123456789.bin
+ARCA_token_v2_wsfex_20123456789.bin
 ```
+
+El `v2` es la versión del formato del archivo. Los archivos sin `v2` los escribió una versión anterior de la lib (vencimiento en hora local del host, sin cifrar fuera de Windows): se ignoran, no se leen. Podés borrarlos.
 
 ### "Los archivos están cifrados"
 
@@ -337,13 +339,15 @@ foreach (var a in message.Attachments)
 
 ### "El TimeZone en Linux es UTC y los datos quedan corridos"
 
-ARCA trabaja en UTC-3 (hora Argentina, sin DST desde 2009). En el container:
+ARCA razona en hora de pared argentina. **La lib no depende del `TZ` del proceso:** resuelve la zona por nombre (`America/Argentina/Buenos_Aires`) para armar los timestamps del `loginTicketRequest`, y evalúa el vencimiento del TA como instante UTC. Corré el container con el `TZ` que quieras — el resultado es el mismo.
+
+Tu lógica de negocio (fechas de comprobante, vencimientos) sí **debe vivir en hora AR**, y para eso sigue siendo cómodo:
 
 ```dockerfile
 ENV TZ=America/Argentina/Buenos_Aires
 ```
 
-La lib internamente convierte a UTC-3 lo que necesita (la firma WSAA y el chequeo de expiración del TA), pero tu lógica de negocio (fechas de comprobante, vencimientos) **debe vivir en hora AR**.
+> Si tu imagen no trae la base de zonas horarias (`tzdata`) o corre con globalización invariante, la lib cae a un UTC-3 fijo. Funciona, pero pierde precisión si Argentina vuelve a aplicar horario de verano.
 
 ### "Mi imagen Docker no encuentra el .pfx"
 

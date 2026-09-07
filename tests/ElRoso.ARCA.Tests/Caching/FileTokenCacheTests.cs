@@ -31,11 +31,11 @@ public class FileTokenCacheTests : IDisposable
         }
     }
 
-    private static LoginTicketResponse FreshTicket(DateTime? expirationArLocal = null) => new()
+    private static LoginTicketResponse FreshTicket(DateTime? expirationUtc = null) => new()
     {
-        // EN: Default expiration = 6h ahead in Argentina local time (UTC-3).
-        // ES: Expiración default = 6h adelante en hora local Argentina (UTC-3).
-        ExpirationTime = expirationArLocal ?? DateTime.UtcNow.AddHours(-3).AddHours(6),
+        // EN: ExpirationTime is always a UTC instant — never the host's local time.
+        // ES: ExpirationTime siempre es un instante UTC — nunca la hora local del host.
+        ExpirationTime = expirationUtc ?? DateTime.UtcNow.AddHours(6),
         Sign = "fake-sign-value",
         Token = "fake-token-value",
     };
@@ -79,7 +79,11 @@ public class FileTokenCacheTests : IDisposable
     {
         await cache.SetAsync("wsfe", 20123456789, FreshTicket());
 
-        var expected = Path.Combine(tempDir, "ARCA_token_wsfe_20123456789.bin");
+        // EN: v2 in the name — the previous format stored the expiration in the host's local
+        //     time, so those files must be ignored instead of read with the wrong meaning.
+        // ES: v2 en el nombre — el formato anterior guardaba el vencimiento en hora local del
+        //     host, asi que esos archivos se ignoran en vez de leerse con otro significado.
+        var expected = Path.Combine(tempDir, "ARCA_token_v2_wsfe_20123456789.bin");
         File.Exists(expected).Should().BeTrue();
     }
 
@@ -87,9 +91,11 @@ public class FileTokenCacheTests : IDisposable
     public async Task GetAsync_should_return_null_for_expired_token()
     {
         // EN: ExpirationTime in the past — must be treated as miss (refresh required).
+        //     One hour ago is inside the old UTC-3 window, so this also pins the UTC comparison.
         // ES: ExpirationTime en el pasado — debe tratarse como miss (hace falta refresh).
-        var pastAr = DateTime.UtcNow.AddHours(-3).AddHours(-1); // 1h ago in AR time
-        var expired = FreshTicket(pastAr);
+        //     Una hora atras cae dentro de la vieja ventana de UTC-3, asi que ademas fija la
+        //     comparacion en UTC.
+        var expired = FreshTicket(DateTime.UtcNow.AddHours(-1));
 
         await cache.SetAsync("wsfe", 20123456789, expired);
         var result = await cache.GetAsync("wsfe", 20123456789);
@@ -102,8 +108,7 @@ public class FileTokenCacheTests : IDisposable
     {
         // EN: ExpirationBuffer = 2 min. Tickets expiring within that window must be treated as expired.
         // ES: ExpirationBuffer = 2 min. Tickets que expiran dentro de esa ventana son tratados como expirados.
-        var almostExpiredAr = DateTime.UtcNow.AddHours(-3).AddSeconds(30); // expires in 30s — within buffer
-        var ticket = FreshTicket(almostExpiredAr);
+        var ticket = FreshTicket(DateTime.UtcNow.AddSeconds(30)); // expires in 30s — within buffer
 
         await cache.SetAsync("wsfe", 20123456789, ticket);
         var result = await cache.GetAsync("wsfe", 20123456789);
@@ -207,5 +212,35 @@ public class FileTokenCacheTests : IDisposable
         var result = await otherCache.GetAsync("wsfe", 20123456789);
 
         result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetAsync_should_ignore_a_cache_file_written_with_the_previous_name()
+    {
+        // EN: Pre-v2 files hold the expiration in the host's local time. Reading them would give
+        //     the ticket a validity window that is off by the machine's UTC offset.
+        // ES: Los archivos anteriores a v2 guardan el vencimiento en hora local del host. Leerlos
+        //     le daria al ticket una ventana de validez corrida por el offset de la maquina.
+        await cache.SetAsync("wsfe", 20123456789, FreshTicket());
+        var current = Path.Combine(tempDir, "ARCA_token_v2_wsfe_20123456789.bin");
+        File.Move(current, Path.Combine(tempDir, "ARCA_token_wsfe_20123456789.bin"));
+
+        var result = await cache.GetAsync("wsfe", 20123456789);
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetAsync_should_serve_a_ticket_that_is_valid_in_utc()
+    {
+        // EN: A ticket expiring in 10 minutes UTC is still usable. The previous reader compared
+        //     against UtcNow-3h and would have served an already-dead ticket instead.
+        // ES: Un ticket que vence en 10 minutos UTC todavia sirve. El lector anterior comparaba
+        //     contra UtcNow-3h y habria servido uno ya muerto.
+        await cache.SetAsync("wsfe", 20123456789, FreshTicket(DateTime.UtcNow.AddMinutes(10)));
+
+        var result = await cache.GetAsync("wsfe", 20123456789);
+
+        result.Should().NotBeNull();
     }
 }

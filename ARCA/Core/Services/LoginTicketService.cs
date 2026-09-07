@@ -14,6 +14,13 @@ using System.Xml;
 
 internal sealed class LoginTicketService : ILoginTicketService
 {
+    // EN: WSAA reasons in Argentina wall-clock time. Resolving the zone by name keeps a future
+    //     DST change from silently shifting every timestamp — a hardcoded -3 could not.
+    // ES: WSAA razona en hora de pared argentina. Resolver la zona por nombre evita que un cambio
+    //     futuro de horario de verano corra todos los timestamps en silencio — un -3 escrito a
+    //     mano no puede.
+    private static readonly TimeZoneInfo ArgentinaTimeZone = ResolveArgentinaTimeZone();
+
     // Thread-safe counter for WSAA request unique IDs.
     // Contador thread-safe para los IDs únicos de request al WSAA.
     private static int uniqueIdCounter;
@@ -58,7 +65,7 @@ internal sealed class LoginTicketService : ILoginTicketService
         string signedBase64;
         try
         {
-            var ARCATime = (await GetNetworkTimeAsync(ct)).AddHours(-3);
+            var ARCATime = ToArgentinaTime(await GetNetworkTimeAsync(ct));
             var uniqueId = (uint)Interlocked.Increment(ref uniqueIdCounter);
 
             var doc = new XmlDocument();
@@ -122,16 +129,68 @@ internal sealed class LoginTicketService : ILoginTicketService
                 Token = doc.SelectSingleNode("//token")!.InnerText,
                 Sign = doc.SelectSingleNode("//sign")!.InnerText,
 
-                // InvariantCulture ensures consistent parsing regardless of server locale.
-                // InvariantCulture asegura parseo consistente sin importar el locale del servidor.
-                ExpirationTime = DateTime.Parse(
-                    doc.SelectSingleNode("//expirationTime")!.InnerText,
-                    CultureInfo.InvariantCulture),
+                ExpirationTime = ParseExpirationTime(doc.SelectSingleNode("//expirationTime")!.InnerText),
             };
         }
         catch (Exception ex)
         {
             throw new ARCAAuthException("Failed to parse the WSAA LoginTicketResponse XML.", ex);
+        }
+    }
+
+    /// <summary>
+    /// EN: Parses the expirationTime returned by WSAA into a UTC instant. Plain
+    ///     <c>DateTime.Parse</c> folds the offset into the machine's local time and marks the
+    ///     result as <c>Local</c>, so the ticket's validity ends up depending on the container's
+    ///     TZ. A value without an offset is read as Argentina time, which is what WSAA sends.
+    /// ES: Parsea el expirationTime que devuelve WSAA como instante UTC. Un
+    ///     <c>DateTime.Parse</c> pelado pliega el offset a la hora local de la máquina y marca el
+    ///     resultado como <c>Local</c>, así que la validez del ticket termina dependiendo del TZ
+    ///     del contenedor. Un valor sin offset se lee como hora argentina, que es lo que manda WSAA.
+    /// </summary>
+    internal static DateTime ParseExpirationTime(string value)
+    {
+        // RoundtripKind keeps what the text said: 'Z' -> Utc, an explicit offset -> Local
+        // (already converted to this machine's clock), nothing -> Unspecified.
+        // RoundtripKind conserva lo que decía el texto: 'Z' -> Utc, un offset explícito -> Local
+        // (ya convertido al reloj de esta máquina), nada -> Unspecified.
+        var parsed = DateTime.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+
+        return parsed.Kind switch
+        {
+            DateTimeKind.Utc => parsed,
+            DateTimeKind.Local => parsed.ToUniversalTime(),
+            _ => TimeZoneInfo.ConvertTimeToUtc(parsed, ArgentinaTimeZone),
+        };
+    }
+
+    /// <summary>
+    /// EN: Converts a UTC instant to Argentina wall-clock time using the tz database.
+    /// ES: Convierte un instante UTC a hora de pared argentina usando la base de zonas horarias.
+    /// </summary>
+    internal static DateTime ToArgentinaTime(DateTime utc) =>
+        TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), ArgentinaTimeZone);
+
+    /// <summary>
+    /// EN: Falls back to a fixed UTC-3 zone when the host has no tz database (trimmed containers,
+    ///     invariant globalization) — losing DST accuracy beats failing to authenticate.
+    /// ES: Cae a una zona fija UTC-3 cuando el host no tiene base de zonas horarias (contenedores
+    ///     recortados, globalización invariante) — perder la precisión de DST es mejor que no
+    ///     poder autenticar.
+    /// </summary>
+    private static TimeZoneInfo ResolveArgentinaTimeZone()
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires");
+        }
+        catch (Exception ex) when (ex is TimeZoneNotFoundException or InvalidTimeZoneException)
+        {
+            return TimeZoneInfo.CreateCustomTimeZone(
+                "ARCA-Argentina",
+                TimeSpan.FromHours(-3),
+                "Argentina (fallback)",
+                "Argentina (fallback)");
         }
     }
 

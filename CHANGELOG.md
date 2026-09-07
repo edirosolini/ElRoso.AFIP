@@ -17,6 +17,15 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
   - **No hace falta migración:** un archivo del formato anterior no se puede desproteger, se descarta como cache miss y se pide un ticket nuevo.
   - Se saca la dependencia `System.Security.Cryptography.ProtectedData` (ya no se usa) y entra `Microsoft.AspNetCore.DataProtection`.
 
+### Fixed
+
+- **La validez del login ticket ya no depende del `TZ` del proceso.** El vencimiento que devuelve WSAA se parseaba con `DateTime.Parse` sin `DateTimeStyles`, que pliega el offset a la hora local de la máquina y marca `Kind = Local`; del otro lado, `FileTokenCache` lo comparaba contra un `DateTime.UtcNow.AddHours(-3)` escrito a mano. Las dos mitades coincidían solo mientras el contenedor corriera en hora argentina.
+
+  - `LoginTicketResponse.ExpirationTime` es ahora siempre un instante **UTC** (`Kind = Utc`), venga el XML con offset, con `Z` o sin nada (sin offset se interpreta como hora argentina, que es lo que manda WSAA).
+  - `FileTokenCache` compara contra `DateTime.UtcNow`. No queda ningún `-3` en el camino de expiración.
+  - El `generationTime` / `expirationTime` del `loginTicketRequest` se arma con la zona resuelta por nombre (`America/Argentina/Buenos_Aires`) en vez de un `-3` fijo, así un cambio de horario de verano no lo rompe. Si el host no tiene base de zonas horarias, cae a un UTC-3 fijo.
+  - ⚠️ **Los archivos de caché cambian de nombre a `ARCA_token_v2_*.bin`.** Los del formato anterior guardan el vencimiento en hora local: se ignoran en vez de leerse mal. Se pueden borrar.
+
 ## [2.2.0] — 2026-07-23
 
 ✨ **Consulta de comprobantes ya autorizados** — `IBillingDocumentNumberingService` suma dos operaciones de lectura sobre WSFEv1 para poder **reconciliar** un comprobante que ARCA autorizó pero el consumidor nunca llegó a persistir.

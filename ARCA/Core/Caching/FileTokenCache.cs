@@ -84,10 +84,13 @@ internal sealed class FileTokenCache : ITokenCache
             if (ticket == null)
                 return null;
 
-            // ExpirationTime comes from WSAA in Argentina local time (UTC-3, no DST since 2009).
-            // ExpirationTime viene del WSAA en hora local argentina (UTC-3, sin horario de verano desde 2009).
-            var nowAr = DateTime.UtcNow.AddHours(-3);
-            if (ticket.ExpirationTime.Subtract(ExpirationBuffer) < nowAr)
+            // EN: ExpirationTime is a UTC instant (LoginTicketService normalizes it), so it is
+            //     compared against UtcNow. The previous hardcoded UTC-3 only matched the writer
+            //     while the container happened to run on Argentina time.
+            // ES: ExpirationTime es un instante UTC (LoginTicketService lo normaliza), así que se
+            //     compara contra UtcNow. El UTC-3 escrito a mano solo coincidía con el escritor
+            //     mientras el contenedor corriera en hora argentina.
+            if (ticket.ExpirationTime.Subtract(ExpirationBuffer) < DateTime.UtcNow)
             {
                 logger.LogInformation("Token cache expired for {Service}/{CompanyId}.", service, companyId);
                 return null;
@@ -128,8 +131,14 @@ internal sealed class FileTokenCache : ITokenCache
     private static string BuildKey(string service, long companyId) =>
         $"{service}_{companyId}";
 
+    // EN: v2 — pre-v2 files stored the expiration in the host's local time and were not
+    //     encrypted outside Windows. Versioning the name makes them invisible instead of
+    //     readable with the wrong meaning.
+    // ES: v2 — los archivos anteriores guardaban el vencimiento en hora local del host y no
+    //     estaban cifrados fuera de Windows. Versionar el nombre los vuelve invisibles en vez de
+    //     legibles con otro significado.
     private string BuildPath(string key) =>
-        Path.Combine(cacheDirectory, $"ARCA_token_{key}.bin");
+        Path.Combine(cacheDirectory, $"ARCA_token_v2_{key}.bin");
 
     private SemaphoreSlim GetSemaphore(string key) =>
         locks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
