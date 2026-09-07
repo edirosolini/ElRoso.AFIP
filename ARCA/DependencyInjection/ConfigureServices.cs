@@ -7,6 +7,7 @@ using ElRoso.ARCA.Core;
 using ElRoso.ARCA.Billing;
 using ElRoso.ARCA.Read;
 using FluentValidation;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.DependencyInjection;
 
 public static class ARCAServiceCollectionExtensions
@@ -33,9 +34,20 @@ public static class ARCAServiceCollectionExtensions
 
         services.AddSingleton(options);
         services.AddSingleton<ICertificateService, CertificateService>();
+
+        // EN: The login ticket cache is encrypted at rest with IDataProtection. Every registration
+        //     inside AddDataProtection() is a TryAdd, so a host that already configured its own
+        //     key ring (persisted volume, key escrow) keeps winning — this only guarantees that a
+        //     provider exists at all.
+        // ES: La caché de login tickets se cifra en reposo con IDataProtection. Todo lo que
+        //     registra AddDataProtection() es TryAdd, así que un host que ya configuró su propio
+        //     key ring (volumen persistido, escrow) sigue mandando — esto solo garantiza que haya
+        //     un provider.
+        services.AddDataProtection();
         services.AddSingleton<ITokenCache, FileTokenCache>(sp =>
             new FileTokenCache(
                 options.TokenCacheDirectory,
+                sp.GetRequiredService<IDataProtectionProvider>(),
                 sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<FileTokenCache>>()));
 
         services.AddSingleton<ILoginTicketService, LoginTicketService>();

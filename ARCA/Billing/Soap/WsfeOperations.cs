@@ -7,14 +7,17 @@ using System.Globalization;
 using ElRoso.ARCA.Billing;
 using ElRoso.ARCA.Core;
 using ElRoso.ARCA.Read;
+using Microsoft.Extensions.Logging;
 
 internal sealed class WsfeOperations : IWsfeOperations
 {
     private readonly ARCAOptions options;
+    private readonly ILogger<WsfeOperations> logger;
 
-    public WsfeOperations(ARCAOptions options)
+    public WsfeOperations(ARCAOptions options, ILogger<WsfeOperations> logger)
     {
         this.options = options;
+        this.logger = logger;
     }
 
     public async Task<int> GetLastNumberAsync(
@@ -25,19 +28,30 @@ internal sealed class WsfeOperations : IWsfeOperations
         int bookPrefix,
         CancellationToken ct)
     {
+        // EN: A caller that already walked away gets no socket opened on its behalf.
+        // ES: A un llamador que ya se fue no se le abre ningún socket.
+        ct.ThrowIfCancellationRequested();
+
         try
         {
             var client = CreateClient();
-            var result = await client.FECompUltimoAutorizadoAsync(new WSFEv1.FECompUltimoAutorizadoRequest
-            {
-                Body = new WSFEv1.FECompUltimoAutorizadoRequestBody
+            var result = await SoapInvoker.InvokeAsync(
+                client,
+                () => client.FECompUltimoAutorizadoAsync(new WSFEv1.FECompUltimoAutorizadoRequest
                 {
-                    Auth = new WSFEv1.FEAuthRequest { Sign = sign, Token = token, Cuit = cuit },
-                    CbteTipo = docType,
-                    PtoVta = bookPrefix,
-                },
-            });
+                    Body = new WSFEv1.FECompUltimoAutorizadoRequestBody
+                    {
+                        Auth = new WSFEv1.FEAuthRequest { Sign = sign, Token = token, Cuit = cuit },
+                        CbteTipo = docType,
+                        PtoVta = bookPrefix,
+                    },
+                }),
+                ct);
             return result.Body.FECompUltimoAutorizadoResult.CbteNro;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -53,6 +67,10 @@ internal sealed class WsfeOperations : IWsfeOperations
         int next,
         CancellationToken ct)
     {
+        // EN: A caller that already walked away gets no socket opened on its behalf.
+        // ES: A un llamador que ya se fue no se le abre ningún socket.
+        ct.ThrowIfCancellationRequested();
+
         var auth = new WSFEv1.FEAuthRequest { Sign = sign, Token = token, Cuit = cuit };
         var isTypeWithVAT = doc.BillingDocumentType is
             BillingDocumentTypeARCAEnum.FA or BillingDocumentTypeARCAEnum.NDA or BillingDocumentTypeARCAEnum.NCA or
@@ -135,7 +153,10 @@ internal sealed class WsfeOperations : IWsfeOperations
         try
         {
             var client = CreateClient();
-            var result = await client.FECAESolicitarAsync(new WSFEv1.FECAESolicitarRequest { Body = body });
+            var result = await SoapInvoker.InvokeAsync(
+                client,
+                () => client.FECAESolicitarAsync(new WSFEv1.FECAESolicitarRequest { Body = body }),
+                ct);
             var wsResult = result.Body.FECAESolicitarResult;
 
             if (wsResult.Errors != null)
@@ -172,6 +193,22 @@ internal sealed class WsfeOperations : IWsfeOperations
         {
             throw;
         }
+        catch (OperationCanceledException)
+        {
+            // EN: Aborting the channel stops the local wait, not the authorization. ARCA may have
+            //     issued a CAE for this voucher with nobody left to persist it — log enough to
+            //     find it from back-office reconciliation.
+            // ES: Abortar el canal corta la espera local, no la autorización. ARCA puede haber
+            //     emitido un CAE para este comprobante sin nadie que lo persista — se deja traza
+            //     suficiente para encontrarlo desde la reconciliación de back-office.
+            logger.LogWarning(
+                "CAE request abandoned by the caller for CUIT {Cuit}, type {DocumentType}, point of sale {BookPrefix}, number {Number}. ARCA may have authorized it — reconcile before re-issuing.",
+                cuit,
+                (int)doc.BillingDocumentType,
+                doc.BillingDocumentBookPrefix,
+                next);
+            throw;
+        }
         catch (Exception ex)
         {
             throw new ARCAServiceException("ARCA WSFEv1 FECAESolicitar failed.", ex);
@@ -187,22 +224,29 @@ internal sealed class WsfeOperations : IWsfeOperations
         long number,
         CancellationToken ct)
     {
+        // EN: A caller that already walked away gets no socket opened on its behalf.
+        // ES: A un llamador que ya se fue no se le abre ningún socket.
+        ct.ThrowIfCancellationRequested();
+
         try
         {
             var client = CreateClient();
-            var result = await client.FECompConsultarAsync(new WSFEv1.FECompConsultarRequest
-            {
-                Body = new WSFEv1.FECompConsultarRequestBody
+            var result = await SoapInvoker.InvokeAsync(
+                client,
+                () => client.FECompConsultarAsync(new WSFEv1.FECompConsultarRequest
                 {
-                    Auth = new WSFEv1.FEAuthRequest { Sign = sign, Token = token, Cuit = cuit },
-                    FeCompConsReq = new WSFEv1.FECompConsultaReq
+                    Body = new WSFEv1.FECompConsultarRequestBody
                     {
-                        CbteTipo = docType,
-                        PtoVta = bookPrefix,
-                        CbteNro = number,
+                        Auth = new WSFEv1.FEAuthRequest { Sign = sign, Token = token, Cuit = cuit },
+                        FeCompConsReq = new WSFEv1.FECompConsultaReq
+                        {
+                            CbteTipo = docType,
+                            PtoVta = bookPrefix,
+                            CbteNro = number,
+                        },
                     },
-                },
-            });
+                }),
+                ct);
 
             var wsResult = result.Body.FECompConsultarResult;
 
@@ -238,6 +282,10 @@ internal sealed class WsfeOperations : IWsfeOperations
             };
         }
         catch (ARCAServiceException)
+        {
+            throw;
+        }
+        catch (OperationCanceledException)
         {
             throw;
         }

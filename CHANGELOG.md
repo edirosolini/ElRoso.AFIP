@@ -6,6 +6,37 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-09-07
+
+### Security
+
+- **El login ticket de WSAA ahora se cifra en reposo en todas las plataformas.** `FileTokenCache` cifraba con **DPAPI**, que solo existe en Windows: en Linux y macOS el archivo `.bin` era JSON legible con el `Token` y el `Sign` de ARCA en claro — la credencial que autoriza a facturar durante 12 h. El payload pasa a protegerse con `IDataProtector` (purpose `ElRoso.ARCA.TokenCache`), que es multiplataforma.
+
+  - `AddARCAClient` registra `services.AddDataProtection()`. Todo lo que registra ese método es `TryAdd`, así que **si tu app ya configuró su propio key ring, ese gana** y no hace falta tocar nada.
+  - ⚠️ Si persistís `TokenCacheDirectory` en un volumen, **persistí también el key ring de DataProtection**. Sin él los archivos no se pueden descifrar y cada arranque pide un TA nuevo.
+  - **No hace falta migración:** un archivo del formato anterior no se puede desproteger, se descarta como cache miss y se pide un ticket nuevo.
+  - Se saca la dependencia `System.Security.Cryptography.ProtectedData` (ya no se usa) y entra `Microsoft.AspNetCore.DataProtection`.
+
+### Fixed
+
+- **Las operaciones SOAP respetan el `CancellationToken` que reciben y ya no filtran el canal WCF.** El token viajaba por toda la superficie asíncrona del paquete y no se usaba en ninguna llamada; además, cada operación construía un `ClientBase<T>` por llamada y nunca lo cerraba.
+
+  - Nuevo `SoapInvoker` interno: puentea el token hacia los proxies generados (que no lo reciben), y cierra el canal siempre — `Close()` en el camino feliz, `Abort()` ante error, cancelación o `Close()` fallido. Aplicado a WSAA, WSFEv1, WSFEXv1, Padrón A5, WSCDC y WSCComu.
+  - Cancelar antes de empezar ni siquiera abre el socket.
+  - La cancelación sale como `OperationCanceledException`; antes quedaba envuelta en `ARCAServiceException` / `ARCAAuthException` y era indistinguible de una falla de ARCA.
+  - ⚠️ **Cancelar un pedido de CAE no cancela lo que ARCA ya hizo.** Abortar el canal corta la espera local, no la autorización remota. Por eso `SolicitarCaeAsync` y `FEXAuthorize` loguean un warning con CUIT, tipo, punto de venta y número del comprobante en vuelo: es lo que necesita la reconciliación para saber dónde mirar antes de re-emitir.
+
+- **La validez del login ticket ya no depende del `TZ` del proceso.** El vencimiento que devuelve WSAA se parseaba con `DateTime.Parse` sin `DateTimeStyles`, que pliega el offset a la hora local de la máquina y marca `Kind = Local`; del otro lado, `FileTokenCache` lo comparaba contra un `DateTime.UtcNow.AddHours(-3)` escrito a mano. Las dos mitades coincidían solo mientras el contenedor corriera en hora argentina.
+
+  - `LoginTicketResponse.ExpirationTime` es ahora siempre un instante **UTC** (`Kind = Utc`), venga el XML con offset, con `Z` o sin nada (sin offset se interpreta como hora argentina, que es lo que manda WSAA).
+  - `FileTokenCache` compara contra `DateTime.UtcNow`. No queda ningún `-3` en el camino de expiración.
+  - El `generationTime` / `expirationTime` del `loginTicketRequest` se arma con la zona resuelta por nombre (`America/Argentina/Buenos_Aires`) en vez de un `-3` fijo, así un cambio de horario de verano no lo rompe. Si el host no tiene base de zonas horarias, cae a un UTC-3 fijo.
+- **El `uniqueId` del `loginTicketRequest` ya no reinicia con el proceso.** Salía de un `Interlocked.Increment` sobre un `static int` que arrancaba en 0, así que después de cada deploy el primer pedido a WSAA volvía a mandar `uniqueId=1` — WSAA lo espera monótono creciente por (CUIT, servicio) y eso puede activar su control anti-replay. Ahora se deriva de los segundos unix, con un piso que garantiza que no se repita dentro del mismo segundo ni retroceda si el reloj del host salta hacia atrás. No persiste estado.
+
+  - ℹ️ Lo que **sí** conviene persistir es `TokenCacheDirectory`: el TA vive 12 h y WSAA no emite un segundo TA mientras el primero siga vigente. Perder la caché en un redeploy no es gratis. Ver [Cookbook → cache de tokens](./docs/COOKBOOK.md#cache-de-tokens).
+
+  - ⚠️ **Los archivos de caché cambian de nombre a `ARCA_token_v2_*.bin`.** Los del formato anterior guardan el vencimiento en hora local: se ignoran en vez de leerse mal. Se pueden borrar.
+
 ## [2.2.0] — 2026-07-23
 
 ✨ **Consulta de comprobantes ya autorizados** — `IBillingDocumentNumberingService` suma dos operaciones de lectura sobre WSFEv1 para poder **reconciliar** un comprobante que ARCA autorizó pero el consumidor nunca llegó a persistir.

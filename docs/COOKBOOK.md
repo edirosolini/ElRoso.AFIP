@@ -88,7 +88,7 @@ Tu CUIT no tiene habilitado el servicio en cuestión. En el portal:
 Causas comunes:
 
 1. **Tu reloj está desincronizado.** WSAA es estricto con el campo `GenerationTime`. La lib usa NTP cacheado, pero si NTP falla la lib cae a `DateTime.UtcNow`. Si tu server tiene drift > 5min, esto explota.
-2. **Estás usando el TA de homologación contra producción.** Cada ambiente tiene su propio TA. La lib usa archivos separados (`ARCA_token_wsfe_20123456789.bin`).
+2. **Estás usando el TA de homologación contra producción.** Cada ambiente tiene su propio TA. La lib usa archivos separados (`ARCA_token_v2_wsfe_20123456789.bin`).
 3. **El TA expiró mientras lo usabas.** Tiene ~12 horas de vida. La lib refresca automáticamente, pero si tu request es exactamente en el borde…
 
 ### "PKCS#7 signing failed"
@@ -107,19 +107,51 @@ Si el cert se cargó bien pero falla la firma:
 En el directorio configurado en `TokenCacheDirectory` (default: `Path.GetTempPath()`). Cada combinación servicio + CUIT genera un archivo:
 
 ```
-ARCA_token_wsfe_20123456789.bin
-ARCA_token_ws_sr_constancia_inscripcion_20123456789.bin
-ARCA_token_wsfex_20123456789.bin
+ARCA_token_v2_wsfe_20123456789.bin
+ARCA_token_v2_ws_sr_constancia_inscripcion_20123456789.bin
+ARCA_token_v2_wsfex_20123456789.bin
 ```
+
+El `v2` es la versión del formato del archivo. Los archivos sin `v2` los escribió una versión anterior de la lib (vencimiento en hora local del host, sin cifrar fuera de Windows): se ignoran, no se leen. Podés borrarlos.
 
 ### "Los archivos están cifrados"
 
-- **En Windows:** sí, con DPAPI scope `CurrentUser`. Solo el mismo usuario del mismo equipo puede descifrarlo.
-- **En Linux/macOS:** NO, son JSON plano. Si esto es problema, montá el directorio en una partición cifrada o usá un volumen de Docker dedicado.
+Sí, en todas las plataformas: el payload se protege con `IDataProtector` (purpose `ElRoso.ARCA.TokenCache`) antes de tocar el disco. Un `Token` + `Sign` de WSAA autoriza a facturar durante 12 h, así que no puede quedar legible ni siquiera dentro de un contenedor efímero.
+
+`AddARCAClient` llama a `services.AddDataProtection()`, que es todo `TryAdd`: si tu app ya configuró su propio key ring (`PersistKeysToFileSystem`, `ProtectKeysWith...`), ese gana. Si no configurás nada, DataProtection usa su ubicación default y las claves pueden ser efímeras — el cache sigue funcionando, pero se invalida en cada arranque.
+
+> Si vas a **persistir** `TokenCacheDirectory` (un volumen montado, por ejemplo), persistí también el key ring de DataProtection. Sin el key ring los archivos son ilegibles y cada arranque pide un TA nuevo.
 
 ### "Migré la app de un server a otro y los tokens no sirven"
 
-Esperado en Windows (DPAPI los ata al usuario+equipo). Borrá el directorio y la próxima request va a refrescar contra WSAA. No es bug, es feature de seguridad.
+Esperado: el key ring de DataProtection quedó en el server viejo. Borrá el directorio y la próxima request va a refrescar contra WSAA. No es bug, es feature de seguridad.
+
+### "Cancelo el request y ARCA igual me emite el CAE"
+
+Toda la superficie asincrona recibe un `CancellationToken` y lo respeta: cancelar aborta el canal WCF y devuelve el control con `OperationCanceledException`.
+
+⚠️ **Pero abortar el canal corta la espera local, no el trabajo remoto.** Si ARCA ya proceso el `FECAESolicitar`, el CAE existe aunque vos ya no estes escuchando. Por eso la lib loguea un warning con CUIT, tipo, punto de venta y numero del comprobante en vuelo:
+
+```
+CAE request abandoned by the caller for CUIT 20123456789, type 1, point of sale 1, number 4521.
+ARCA may have authorized it — reconcile before re-issuing.
+```
+
+Ante ese warning, **no re-emitas**: reconciliá con `GetLastAuthorizedNumberAsync` + `GetAuthorizedAsync` (ver [v2.2.0](../CHANGELOG.md)). Re-emitir fabrica un duplicado fiscal que despues hay que anular con nota de credito.
+
+### "Redeployeo y pierdo el cache de tokens"
+
+El TA vive 12 h y **WSAA no emite un segundo TA mientras el primero siga vigente** para el mismo (CUIT, servicio): responde algo del tipo `El CEE ya posee un TA valido para el acceso al WSN solicitado`. Si `TokenCacheDirectory` vive en el filesystem efímero del container, cada deploy tira el TA que ARCA sigue considerando vivo.
+
+Persistí el directorio — y con él, el key ring de DataProtection:
+
+```yaml
+volumes:
+  - ./ARCA/tokens:/ARCA/tokens
+  - ./DataProtection/keys:/DataProtection/keys
+```
+
+> El `uniqueId` del `loginTicketRequest` **no** necesita persistencia: se deriva del reloj (segundos unix), así que sigue creciendo entre reinicios aunque el proceso arranque de cero.
 
 ### "Tengo concurrencia alta y se corrompen los archivos"
 
@@ -334,13 +366,15 @@ foreach (var a in message.Attachments)
 
 ### "El TimeZone en Linux es UTC y los datos quedan corridos"
 
-ARCA trabaja en UTC-3 (hora Argentina, sin DST desde 2009). En el container:
+ARCA razona en hora de pared argentina. **La lib no depende del `TZ` del proceso:** resuelve la zona por nombre (`America/Argentina/Buenos_Aires`) para armar los timestamps del `loginTicketRequest`, y evalúa el vencimiento del TA como instante UTC. Corré el container con el `TZ` que quieras — el resultado es el mismo.
+
+Tu lógica de negocio (fechas de comprobante, vencimientos) sí **debe vivir en hora AR**, y para eso sigue siendo cómodo:
 
 ```dockerfile
 ENV TZ=America/Argentina/Buenos_Aires
 ```
 
-La lib internamente convierte a UTC-3 lo que necesita (la firma WSAA y el chequeo de expiración del TA), pero tu lógica de negocio (fechas de comprobante, vencimientos) **debe vivir en hora AR**.
+> Si tu imagen no trae la base de zonas horarias (`tzdata`) o corre con globalización invariante, la lib cae a un UTC-3 fijo. Funciona, pero pierde precisión si Argentina vuelve a aplicar horario de verano.
 
 ### "Mi imagen Docker no encuentra el .pfx"
 

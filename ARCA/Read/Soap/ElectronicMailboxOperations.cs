@@ -24,6 +24,10 @@ internal sealed class ElectronicMailboxOperations : IElectronicMailboxOperations
         MailboxQueryRequest request,
         CancellationToken ct)
     {
+        // EN: A caller that already walked away gets no socket opened on its behalf.
+        // ES: A un llamador que ya se fue no se le abre ningún socket.
+        ct.ThrowIfCancellationRequested();
+
         try
         {
             var client = CreateClient();
@@ -36,7 +40,10 @@ internal sealed class ElectronicMailboxOperations : IElectronicMailboxOperations
             };
 
             var filter = BuildFilter(request);
-            var result = await client.consultarComunicacionesAsync(auth, filter);
+            var result = await SoapInvoker.InvokeAsync(
+                client,
+                () => client.consultarComunicacionesAsync(auth, filter),
+                ct);
             var paginada = result.RespuestaPaginada;
 
             if (paginada is null)
@@ -51,6 +58,10 @@ internal sealed class ElectronicMailboxOperations : IElectronicMailboxOperations
                 Messages = [.. (paginada.items ?? []).Select(MapSummary)],
             };
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             throw new ARCAServiceException("ARCA WSCComu consultarComunicaciones failed.", ex);
@@ -64,6 +75,10 @@ internal sealed class ElectronicMailboxOperations : IElectronicMailboxOperations
         long messageId,
         CancellationToken ct)
     {
+        // EN: A caller that already walked away gets no socket opened on its behalf.
+        // ES: A un llamador que ya se fue no se le abre ningún socket.
+        ct.ThrowIfCancellationRequested();
+
         try
         {
             var client = CreateClient();
@@ -77,7 +92,10 @@ internal sealed class ElectronicMailboxOperations : IElectronicMailboxOperations
 
             // EN: incluirAdjuntos=true so the consumer can render the full message in one call.
             // ES: incluirAdjuntos=true para que el consumidor pueda renderizar todo en una llamada.
-            var result = await client.consumirComunicacionAsync(auth, messageId, true);
+            var result = await SoapInvoker.InvokeAsync(
+                client,
+                () => client.consumirComunicacionAsync(auth, messageId, true),
+                ct);
             var comunicacion = result.Comunicacion;
 
             if (comunicacion is null)
@@ -94,6 +112,10 @@ internal sealed class ElectronicMailboxOperations : IElectronicMailboxOperations
                 Success = true,
                 Message = MapMessage(comunicacion),
             };
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {

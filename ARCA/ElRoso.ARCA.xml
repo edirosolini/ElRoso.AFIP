@@ -266,22 +266,26 @@
         <member name="T:ElRoso.ARCA.Core.FileTokenCache">
             <summary>
             File-based token cache. One encrypted binary file per service+company combination.
+            Payloads are protected with <see cref="T:Microsoft.AspNetCore.DataProtection.IDataProtector"/>, which is cross-platform — the
+            previous DPAPI path only encrypted on Windows and wrote plain JSON everywhere else.
             Uses per-key SemaphoreSlim to prevent concurrent read/write corruption.
             Caché de tokens basada en archivos cifrados. Un archivo por combinación servicio+empresa.
+            El contenido se protege con <see cref="T:Microsoft.AspNetCore.DataProtection.IDataProtector"/>, que es multiplataforma — el
+            camino anterior (DPAPI) solo cifraba en Windows y escribía JSON plano en el resto.
             </summary>
         </member>
         <member name="M:ElRoso.ARCA.Core.FileTokenCache.SerializeToken(ElRoso.ARCA.Core.LoginTicketResponse)">
             <summary>
             Serializes and encrypts a token for disk storage.
-            On Windows uses DPAPI (CurrentUser scope) — on other platforms writes plain JSON.
             Serializa y cifra un token para almacenamiento en disco.
-            En Windows usa DPAPI (scope CurrentUser) — en otras plataformas escribe JSON plano.
             </summary>
         </member>
         <member name="M:ElRoso.ARCA.Core.FileTokenCache.DeserializeToken(System.Byte[])">
             <summary>
-            Decrypts and deserializes a token from disk.
-            Descifra y deserializa un token desde disco.
+            Decrypts and deserializes a token from disk. Throws <see cref="T:System.Security.Cryptography.CryptographicException"/>
+            when the payload was not written by this protector — the caller treats that as a miss.
+            Descifra y deserializa un token desde disco. Lanza <see cref="T:System.Security.Cryptography.CryptographicException"/>
+            si el payload no lo escribió este protector — el llamador lo trata como miss.
             </summary>
         </member>
         <member name="T:ElRoso.ARCA.Core.ITokenCache">
@@ -363,6 +367,16 @@
             <summary>
             Internal WSAA request state. Not part of the public API.
             Estado interno del request al WSAA. No es parte de la API pública.
+            </summary>
+        </member>
+        <member name="P:ElRoso.ARCA.Core.LoginTicketResponse.ExpirationTime">
+            <summary>
+            EN: Ticket expiration as a <b>UTC</b> instant (<c>Kind = Utc</c>), whatever offset WSAA
+                wrote in the XML. Compare it against <see cref="P:System.DateTime.UtcNow"/>, never against a
+                local clock.
+            ES: Vencimiento del ticket como instante <b>UTC</b> (<c>Kind = Utc</c>), sea cual sea el
+                offset que haya escrito WSAA en el XML. Compararlo contra <see cref="P:System.DateTime.UtcNow"/>,
+                nunca contra un reloj local.
             </summary>
         </member>
         <member name="T:ElRoso.ARCA.Core.ICertificateService">
@@ -465,12 +479,93 @@
             URL o si proxyás a través de un middleware propio.
             </summary>
         </member>
+        <member name="M:ElRoso.ARCA.Core.LoginTicketService.NextUniqueId">
+            <summary>
+            EN: Returns the next WSAA uniqueId. A process-local counter restarted at 1 on every deploy,
+                which can trip the anti-replay control on WSAA's side; deriving it from unix seconds
+                keeps the sequence monotonic across restarts without any persisted state.
+            ES: Devuelve el próximo uniqueId del WSAA. Un contador en memoria reiniciaba en 1 en cada
+                deploy, lo que puede activar el control anti-replay del lado de WSAA; derivarlo de los
+                segundos unix mantiene la secuencia monótona entre reinicios sin persistir nada.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Core.LoginTicketService.ComputeUniqueId(System.Int64,System.Int64)">
+            <summary>
+            EN: The clock seeds the value; <paramref name="previous"/> guarantees it never repeats or
+                goes backwards when several tickets are requested inside the same second, or when the
+                host clock jumps back (NTP correction).
+            ES: El reloj siembra el valor; <paramref name="previous"/> garantiza que no se repita ni
+                retroceda cuando se piden varios tickets en el mismo segundo, o cuando el reloj del
+                host salta hacia atrás (corrección de NTP).
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Core.LoginTicketService.ParseExpirationTime(System.String)">
+            <summary>
+            EN: Parses the expirationTime returned by WSAA into a UTC instant. Plain
+                <c>DateTime.Parse</c> folds the offset into the machine's local time and marks the
+                result as <c>Local</c>, so the ticket's validity ends up depending on the container's
+                TZ. A value without an offset is read as Argentina time, which is what WSAA sends.
+            ES: Parsea el expirationTime que devuelve WSAA como instante UTC. Un
+                <c>DateTime.Parse</c> pelado pliega el offset a la hora local de la máquina y marca el
+                resultado como <c>Local</c>, así que la validez del ticket termina dependiendo del TZ
+                del contenedor. Un valor sin offset se lee como hora argentina, que es lo que manda WSAA.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Core.LoginTicketService.ToArgentinaTime(System.DateTime)">
+            <summary>
+            EN: Converts a UTC instant to Argentina wall-clock time using the tz database.
+            ES: Convierte un instante UTC a hora de pared argentina usando la base de zonas horarias.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Core.LoginTicketService.ResolveArgentinaTimeZone">
+            <summary>
+            EN: Falls back to a fixed UTC-3 zone when the host has no tz database (trimmed containers,
+                invariant globalization) — losing DST accuracy beats failing to authenticate.
+            ES: Cae a una zona fija UTC-3 cuando el host no tiene base de zonas horarias (contenedores
+                recortados, globalización invariante) — perder la precisión de DST es mejor que no
+                poder autenticar.
+            </summary>
+        </member>
         <member name="M:ElRoso.ARCA.Core.LoginTicketService.GetNetworkTimeAsync(System.Threading.CancellationToken)">
             <summary>
             Fetches current time from ARCA's NTP server, cached for 60 s.
             Falls back to system clock if NTP is unreachable — WSAA tolerates ±10 min.
             Obtiene la hora del servidor NTP de ARCA, cacheada por 60 s.
             Usa el reloj del sistema como fallback — WSAA tolera ±10 min de desvío.
+            </summary>
+        </member>
+        <member name="T:ElRoso.ARCA.Core.SoapInvoker">
+            <summary>
+            EN: Runs one call against a generated SOAP proxy. The proxies produced by
+                <c>dotnet-svcutil</c> take no <see cref="T:System.Threading.CancellationToken"/>, so it is bridged here, and
+                the WCF channel is always closed (or aborted) instead of being left to the GC.
+            ES: Ejecuta una llamada contra un proxy SOAP generado. Los proxies que produce
+                <c>dotnet-svcutil</c> no reciben <see cref="T:System.Threading.CancellationToken"/>, así que se puentea acá, y
+                el canal WCF siempre se cierra (o se aborta) en vez de quedar esperando al GC.
+            </summary>
+            <remarks>
+            EN: ⚠️ Cancelling stops the local wait, not the remote work. ARCA may still authorize a
+                voucher whose caller already walked away — the caller is expected to log the abandoned
+                request so reconciliation knows where to look.
+            ES: ⚠️ Cancelar corta la espera local, no el trabajo remoto. ARCA puede autorizar igual un
+                comprobante cuyo llamador ya se fue — el llamador tiene que dejar traza del pedido
+                abandonado para que la reconciliación sepa dónde mirar.
+            </remarks>
+        </member>
+        <member name="M:ElRoso.ARCA.Core.SoapInvoker.Close(System.ServiceModel.ICommunicationObject)">
+            <summary>
+            EN: Closing a faulted channel throws. The result is already in hand, so fall back to
+                Abort rather than turning a successful call into a failure.
+            ES: Cerrar un canal en falla tira excepción. El resultado ya está, así que se cae a Abort
+                en vez de convertir una llamada exitosa en un error.
+            </summary>
+        </member>
+        <member name="M:ElRoso.ARCA.Core.SoapInvoker.Observe``1(System.Threading.Tasks.Task{``0})">
+            <summary>
+            EN: The abandoned call still finishes somewhere. Observing it keeps a later fault from
+                surfacing as an unobserved task exception.
+            ES: La llamada abandonada igual termina en algún lado. Observarla evita que una falla
+                posterior aparezca como excepción de tarea no observada.
             </summary>
         </member>
         <member name="M:ElRoso.ARCA.ARCAServiceCollectionExtensions.AddARCAClient(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{ElRoso.ARCA.Core.ARCAOptions})">

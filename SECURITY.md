@@ -40,7 +40,7 @@ Vamos a:
 Lo más sensible en esta lib son:
 
 - El manejo del **certificado X.509** y la **clave privada** del usuario
-- El cache de **tokens WSAA** (DPAPI en Windows, plano en Linux/Mac)
+- El cache de **tokens WSAA** (cifrado en reposo con `IDataProtection`)
 - La firma **PKCS#7** del LoginTicketRequest
 - El **NTP cache** (un attacker que controla el tiempo puede invalidar / fabricar tokens)
 - Cualquier path que loggee información sensible
