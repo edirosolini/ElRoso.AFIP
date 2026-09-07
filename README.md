@@ -10,7 +10,7 @@
 > **Cliente .NET 9 para facturación electrónica con ARCA (ex-AFIP).** Hecho para que devs argentinos no sufran integrando como sufrimos los que vinimos antes.
 
 **Soporta:**
-- ✅ Autenticación WSAA (PKCS#7 + token cache cifrado DPAPI)
+- ✅ Autenticación WSAA (PKCS#7 + token cache cifrado con `IDataProtection`)
 - ✅ Facturación doméstica WSFEv1 (FA / FB / FC + Notas de Crédito y Débito)
 - ✅ Facturación exportación WSFEXv1 (Factura, NC, ND)
 - ✅ Padrón A5 (consulta de inscripción AFIP por CUIT)
@@ -48,7 +48,7 @@
 dotnet add package ElRoso.ARCA
 ```
 
-> **Requisitos:** .NET 9.0 o superior. Funciona en Windows, Linux y macOS. El cache de tokens usa **DPAPI** en Windows y JSON plano en Linux/macOS (si esto es problema, ver [Cookbook → cache de tokens](./docs/COOKBOOK.md#cache-de-tokens)).
+> **Requisitos:** .NET 9.0 o superior. Funciona en Windows, Linux y macOS. El cache de tokens se cifra con **`IDataProtection`** en todas las plataformas; `AddARCAClient` registra un provider por defecto y respeta el que ya tengas configurado (ver [Cookbook → cache de tokens](./docs/COOKBOOK.md#cache-de-tokens)).
 
 ---
 

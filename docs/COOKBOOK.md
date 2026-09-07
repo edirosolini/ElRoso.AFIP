@@ -114,12 +114,15 @@ ARCA_token_wsfex_20123456789.bin
 
 ### "Los archivos están cifrados"
 
-- **En Windows:** sí, con DPAPI scope `CurrentUser`. Solo el mismo usuario del mismo equipo puede descifrarlo.
-- **En Linux/macOS:** NO, son JSON plano. Si esto es problema, montá el directorio en una partición cifrada o usá un volumen de Docker dedicado.
+Sí, en todas las plataformas: el payload se protege con `IDataProtector` (purpose `ElRoso.ARCA.TokenCache`) antes de tocar el disco. Un `Token` + `Sign` de WSAA autoriza a facturar durante 12 h, así que no puede quedar legible ni siquiera dentro de un contenedor efímero.
+
+`AddARCAClient` llama a `services.AddDataProtection()`, que es todo `TryAdd`: si tu app ya configuró su propio key ring (`PersistKeysToFileSystem`, `ProtectKeysWith...`), ese gana. Si no configurás nada, DataProtection usa su ubicación default y las claves pueden ser efímeras — el cache sigue funcionando, pero se invalida en cada arranque.
+
+> Si vas a **persistir** `TokenCacheDirectory` (un volumen montado, por ejemplo), persistí también el key ring de DataProtection. Sin el key ring los archivos son ilegibles y cada arranque pide un TA nuevo.
 
 ### "Migré la app de un server a otro y los tokens no sirven"
 
-Esperado en Windows (DPAPI los ata al usuario+equipo). Borrá el directorio y la próxima request va a refrescar contra WSAA. No es bug, es feature de seguridad.
+Esperado: el key ring de DataProtection quedó en el server viejo. Borrá el directorio y la próxima request va a refrescar contra WSAA. No es bug, es feature de seguridad.
 
 ### "Tengo concurrencia alta y se corrompen los archivos"
 

@@ -34,7 +34,7 @@ dotnet test
 ```
 ElRoso.ARCA.sln
 ├── ARCA/                       # Proyecto principal de la lib
-│   ├── Caching/                # FileTokenCache (cifrado DPAPI)
+│   ├── Caching/                # FileTokenCache (cifrado con IDataProtection)
 │   ├── Connected Services/     # Proxies SOAP autogenerados (NO EDITAR a mano)
 │   ├── Domains/                # Enums, Requests, Responses, interfaces públicas
 │   ├── Exceptions/             # ARCAAuthException, ARCAServiceException, ARCAValidationException

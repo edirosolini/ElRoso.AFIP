@@ -6,6 +6,17 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-09-07
+
+### Security
+
+- **El login ticket de WSAA ahora se cifra en reposo en todas las plataformas.** `FileTokenCache` cifraba con **DPAPI**, que solo existe en Windows: en Linux y macOS el archivo `.bin` era JSON legible con el `Token` y el `Sign` de ARCA en claro — la credencial que autoriza a facturar durante 12 h. El payload pasa a protegerse con `IDataProtector` (purpose `ElRoso.ARCA.TokenCache`), que es multiplataforma.
+
+  - `AddARCAClient` registra `services.AddDataProtection()`. Todo lo que registra ese método es `TryAdd`, así que **si tu app ya configuró su propio key ring, ese gana** y no hace falta tocar nada.
+  - ⚠️ Si persistís `TokenCacheDirectory` en un volumen, **persistí también el key ring de DataProtection**. Sin él los archivos no se pueden descifrar y cada arranque pide un TA nuevo.
+  - **No hace falta migración:** un archivo del formato anterior no se puede desproteger, se descarta como cache miss y se pide un ticket nuevo.
+  - Se saca la dependencia `System.Security.Cryptography.ProtectedData` (ya no se usa) y entra `Microsoft.AspNetCore.DataProtection`.
+
 ## [2.2.0] — 2026-07-23
 
 ✨ **Consulta de comprobantes ya autorizados** — `IBillingDocumentNumberingService` suma dos operaciones de lectura sobre WSFEv1 para poder **reconciliar** un comprobante que ARCA autorizó pero el consumidor nunca llegó a persistir.

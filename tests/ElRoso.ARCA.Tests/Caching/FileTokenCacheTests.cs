@@ -1,8 +1,10 @@
 // EN: Tests for FileTokenCache — encrypted file-based ticket cache.
 // ES: Tests para FileTokenCache — caché de tickets en archivos cifrados.
+using System.Text;
 using ElRoso.ARCA.Core;
 using ElRoso.ARCA.Billing;
 using ElRoso.ARCA.Read;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace ElRoso.ARCA.Tests.Caching;
@@ -12,10 +14,12 @@ public class FileTokenCacheTests : IDisposable
     private readonly string tempDir;
     private readonly FileTokenCache cache;
 
+    private readonly IDataProtectionProvider dataProtection = new EphemeralDataProtectionProvider();
+
     public FileTokenCacheTests()
     {
         tempDir = Path.Combine(Path.GetTempPath(), "ElRoso.ARCA.Tests", Guid.NewGuid().ToString("N"));
-        cache = new FileTokenCache(tempDir, NullLogger<FileTokenCache>.Instance);
+        cache = new FileTokenCache(tempDir, dataProtection, NullLogger<FileTokenCache>.Instance);
     }
 
     public void Dispose()
@@ -42,7 +46,7 @@ public class FileTokenCacheTests : IDisposable
         var newDir = Path.Combine(Path.GetTempPath(), "ElRoso.ARCA.Tests", Guid.NewGuid().ToString("N"));
         Directory.Exists(newDir).Should().BeFalse();
 
-        _ = new FileTokenCache(newDir, NullLogger<FileTokenCache>.Instance);
+        _ = new FileTokenCache(newDir, dataProtection, NullLogger<FileTokenCache>.Instance);
 
         Directory.Exists(newDir).Should().BeTrue();
         Directory.Delete(newDir, recursive: true);
@@ -157,5 +161,51 @@ public class FileTokenCacheTests : IDisposable
         await Task.WhenAll(tasks);
 
         tasks.All(t => t.Result is not null).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SetAsync_should_not_leave_token_or_sign_readable_on_disk()
+    {
+        // EN: The Token+Sign pair authorizes invoicing before ARCA for 12h — it must never sit
+        //     in cleartext on disk, on any platform.
+        // ES: El par Token+Sign autoriza a facturar ante ARCA por 12 h — nunca puede quedar en
+        //     texto plano en disco, en ninguna plataforma.
+        await cache.SetAsync("wsfe", 20123456789, FreshTicket());
+
+        var file = Directory.GetFiles(tempDir).Single();
+        var raw = await File.ReadAllBytesAsync(file);
+        var asText = Encoding.UTF8.GetString(raw);
+
+        asText.Should().NotContain("fake-token-value");
+        asText.Should().NotContain("fake-sign-value");
+    }
+
+    [Fact]
+    public async Task GetAsync_should_discard_a_legacy_plaintext_cache_file()
+    {
+        // EN: Files written by the previous version are plain JSON. They must be treated as a
+        //     miss (a new ticket is requested), never parsed.
+        // ES: Los archivos de la versión anterior son JSON plano. Se tratan como miss (se pide
+        //     un ticket nuevo), nunca se parsean.
+        await cache.SetAsync("wsfe", 20123456789, FreshTicket());
+        var file = Directory.GetFiles(tempDir).Single();
+        await File.WriteAllTextAsync(file, "{\"Token\":\"legacy\",\"Sign\":\"legacy\",\"ExpirationTime\":\"2099-01-01T00:00:00\"}");
+
+        var result = await cache.GetAsync("wsfe", 20123456789);
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetAsync_should_discard_a_file_protected_with_another_key()
+    {
+        // EN: A cache file that this process cannot decrypt is a miss, not a crash.
+        // ES: Un archivo que este proceso no puede descifrar es un miss, no una excepción.
+        await cache.SetAsync("wsfe", 20123456789, FreshTicket());
+
+        var otherCache = new FileTokenCache(tempDir, new EphemeralDataProtectionProvider(), NullLogger<FileTokenCache>.Instance);
+        var result = await otherCache.GetAsync("wsfe", 20123456789);
+
+        result.Should().BeNull();
     }
 }

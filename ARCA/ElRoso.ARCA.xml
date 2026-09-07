@@ -266,22 +266,26 @@
         <member name="T:ElRoso.ARCA.Core.FileTokenCache">
             <summary>
             File-based token cache. One encrypted binary file per service+company combination.
+            Payloads are protected with <see cref="T:Microsoft.AspNetCore.DataProtection.IDataProtector"/>, which is cross-platform — the
+            previous DPAPI path only encrypted on Windows and wrote plain JSON everywhere else.
             Uses per-key SemaphoreSlim to prevent concurrent read/write corruption.
             Caché de tokens basada en archivos cifrados. Un archivo por combinación servicio+empresa.
+            El contenido se protege con <see cref="T:Microsoft.AspNetCore.DataProtection.IDataProtector"/>, que es multiplataforma — el
+            camino anterior (DPAPI) solo cifraba en Windows y escribía JSON plano en el resto.
             </summary>
         </member>
         <member name="M:ElRoso.ARCA.Core.FileTokenCache.SerializeToken(ElRoso.ARCA.Core.LoginTicketResponse)">
             <summary>
             Serializes and encrypts a token for disk storage.
-            On Windows uses DPAPI (CurrentUser scope) — on other platforms writes plain JSON.
             Serializa y cifra un token para almacenamiento en disco.
-            En Windows usa DPAPI (scope CurrentUser) — en otras plataformas escribe JSON plano.
             </summary>
         </member>
         <member name="M:ElRoso.ARCA.Core.FileTokenCache.DeserializeToken(System.Byte[])">
             <summary>
-            Decrypts and deserializes a token from disk.
-            Descifra y deserializa un token desde disco.
+            Decrypts and deserializes a token from disk. Throws <see cref="T:System.Security.Cryptography.CryptographicException"/>
+            when the payload was not written by this protector — the caller treats that as a miss.
+            Descifra y deserializa un token desde disco. Lanza <see cref="T:System.Security.Cryptography.CryptographicException"/>
+            si el payload no lo escribió este protector — el llamador lo trata como miss.
             </summary>
         </member>
         <member name="T:ElRoso.ARCA.Core.ITokenCache">

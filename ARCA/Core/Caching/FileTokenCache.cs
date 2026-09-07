@@ -6,6 +6,7 @@ namespace ElRoso.ARCA.Core;
 using ElRoso.ARCA.Core;
 using ElRoso.ARCA.Billing;
 using ElRoso.ARCA.Read;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Collections.Concurrent;
@@ -14,8 +15,12 @@ using System.Text;
 
 /// <summary>
 /// File-based token cache. One encrypted binary file per service+company combination.
+/// Payloads are protected with <see cref="IDataProtector"/>, which is cross-platform — the
+/// previous DPAPI path only encrypted on Windows and wrote plain JSON everywhere else.
 /// Uses per-key SemaphoreSlim to prevent concurrent read/write corruption.
 /// Caché de tokens basada en archivos cifrados. Un archivo por combinación servicio+empresa.
+/// El contenido se protege con <see cref="IDataProtector"/>, que es multiplataforma — el
+/// camino anterior (DPAPI) solo cifraba en Windows y escribía JSON plano en el resto.
 /// </summary>
 internal sealed class FileTokenCache : ITokenCache
 {
@@ -23,16 +28,24 @@ internal sealed class FileTokenCache : ITokenCache
     // Margen antes de considerar expirado el token (evita casos borde de reloj).
     private static readonly TimeSpan ExpirationBuffer = TimeSpan.FromMinutes(2);
 
+    // Purpose string for the data protector — scopes the key so an unrelated protector in the
+    // same application cannot read these payloads.
+    // Purpose del protector — acota la clave para que otro protector de la misma aplicación no
+    // pueda leer estos payloads.
+    private const string ProtectorPurpose = "ElRoso.ARCA.TokenCache";
+
     private readonly string cacheDirectory;
+    private readonly IDataProtector protector;
     private readonly ILogger<FileTokenCache> logger;
 
     // Per-key semaphores — ConcurrentDictionary avoids a global lock on registration.
     // Semáforos por clave — ConcurrentDictionary evita un lock global al registrar.
     private readonly ConcurrentDictionary<string, SemaphoreSlim> locks = new();
 
-    public FileTokenCache(string cacheDirectory, ILogger<FileTokenCache> logger)
+    public FileTokenCache(string cacheDirectory, IDataProtectionProvider dataProtectionProvider, ILogger<FileTokenCache> logger)
     {
         this.cacheDirectory = cacheDirectory;
+        this.protector = dataProtectionProvider.CreateProtector(ProtectorPurpose);
         this.logger = logger;
         Directory.CreateDirectory(cacheDirectory);
     }
@@ -60,9 +73,11 @@ internal sealed class FileTokenCache : ITokenCache
             }
             catch (CryptographicException)
             {
-                // Cache file written before encryption was introduced — treat as miss.
-                // Archivo escrito antes de que se agregara cifrado — se trata como miss.
-                logger.LogWarning("Token cache file appears unencrypted for {Service}/{CompanyId}. Discarding.", service, companyId);
+                // EN: Unreadable payload — written before encryption existed, or protected with a
+                //     key this process no longer has. Either way it is a miss, never a parse.
+                // ES: Payload ilegible — escrito antes de que existiera el cifrado, o protegido con
+                //     una clave que este proceso ya no tiene. En ambos casos es un miss, no se parsea.
+                logger.LogWarning("Token cache file could not be decrypted for {Service}/{CompanyId}. Discarding.", service, companyId);
                 return null;
             }
 
@@ -121,31 +136,23 @@ internal sealed class FileTokenCache : ITokenCache
 
     /// <summary>
     /// Serializes and encrypts a token for disk storage.
-    /// On Windows uses DPAPI (CurrentUser scope) — on other platforms writes plain JSON.
     /// Serializa y cifra un token para almacenamiento en disco.
-    /// En Windows usa DPAPI (scope CurrentUser) — en otras plataformas escribe JSON plano.
     /// </summary>
-    private static byte[] SerializeToken(LoginTicketResponse ticket)
+    private byte[] SerializeToken(LoginTicketResponse ticket)
     {
-        var json = JsonConvert.SerializeObject(ticket, Formatting.Indented);
-        var bytes = Encoding.UTF8.GetBytes(json);
-
-        if (OperatingSystem.IsWindows())
-            return ProtectedData.Protect(bytes, null, DataProtectionScope.CurrentUser);
-
-        return bytes;
+        var json = JsonConvert.SerializeObject(ticket);
+        return protector.Protect(Encoding.UTF8.GetBytes(json));
     }
 
     /// <summary>
-    /// Decrypts and deserializes a token from disk.
-    /// Descifra y deserializa un token desde disco.
+    /// Decrypts and deserializes a token from disk. Throws <see cref="CryptographicException"/>
+    /// when the payload was not written by this protector — the caller treats that as a miss.
+    /// Descifra y deserializa un token desde disco. Lanza <see cref="CryptographicException"/>
+    /// si el payload no lo escribió este protector — el llamador lo trata como miss.
     /// </summary>
-    private static LoginTicketResponse? DeserializeToken(byte[] data)
+    private LoginTicketResponse? DeserializeToken(byte[] data)
     {
-        var jsonBytes = OperatingSystem.IsWindows()
-            ? ProtectedData.Unprotect(data, null, DataProtectionScope.CurrentUser)
-            : data;
-
+        var jsonBytes = protector.Unprotect(data);
         return JsonConvert.DeserializeObject<LoginTicketResponse>(Encoding.UTF8.GetString(jsonBytes));
     }
 }
