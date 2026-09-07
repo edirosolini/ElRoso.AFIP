@@ -91,6 +91,10 @@ internal sealed class LoginTicketService : ILoginTicketService
         {
             throw;
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             throw new ARCAAuthException("Failed to build or sign the LoginTicketRequest.", ex);
@@ -103,14 +107,21 @@ internal sealed class LoginTicketService : ILoginTicketService
         {
             logger.LogInformation("Calling WSAA at {Url}.", wsaaUrl);
             var client = new WSAA.LoginCMSClient(WSAA.LoginCMSClient.EndpointConfiguration.LoginCms, wsaaUrl);
-            var response = await client.loginCmsAsync(new WSAA.loginCmsRequest
-            {
-                Body = new WSAA.loginCmsRequestBody { in0 = signedBase64 },
-            });
+            var response = await SoapInvoker.InvokeAsync(
+                client,
+                () => client.loginCmsAsync(new WSAA.loginCmsRequest
+                {
+                    Body = new WSAA.loginCmsRequestBody { in0 = signedBase64 },
+                }),
+                ct);
             ticketXml = response.Body.loginCmsReturn;
             logger.LogInformation("WSAA responded successfully.");
         }
         catch (ARCAAuthException)
+        {
+            throw;
+        }
+        catch (OperationCanceledException)
         {
             throw;
         }

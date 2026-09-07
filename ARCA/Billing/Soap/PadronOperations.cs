@@ -21,6 +21,10 @@ internal sealed class PadronOperations : IPadronOperations
         long clientCuit,
         CancellationToken ct)
     {
+        // EN: A caller that already walked away gets no socket opened on its behalf.
+        // ES: A un llamador que ya se fue no se le abre ningún socket.
+        ct.ThrowIfCancellationRequested();
+
         try
         {
             var client = new Padron.PersonaServiceA5Client(
@@ -28,13 +32,16 @@ internal sealed class PadronOperations : IPadronOperations
                 options.PadronUrl);
             client.InnerChannel.OperationTimeout = TimeSpan.FromSeconds(options.SoapTimeoutSeconds);
 
-            var resp = await client.getPersonaAsync(new Padron.getPersona
-            {
-                sign = sign,
-                token = token,
-                cuitRepresentada = issuingCuit,
-                idPersona = clientCuit,
-            });
+            var resp = await SoapInvoker.InvokeAsync(
+                client,
+                () => client.getPersonaAsync(new Padron.getPersona
+                {
+                    sign = sign,
+                    token = token,
+                    cuitRepresentada = issuingCuit,
+                    idPersona = clientCuit,
+                }),
+                ct);
 
             if (resp.personaReturn.errorConstancia != null)
             {
@@ -55,6 +62,10 @@ internal sealed class PadronOperations : IPadronOperations
                 IsMonotributo = isMonotributo,
                 ClientName = name,
             };
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {

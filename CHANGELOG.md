@@ -19,6 +19,13 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ### Fixed
 
+- **Las operaciones SOAP respetan el `CancellationToken` que reciben y ya no filtran el canal WCF.** El token viajaba por toda la superficie asíncrona del paquete y no se usaba en ninguna llamada; además, cada operación construía un `ClientBase<T>` por llamada y nunca lo cerraba.
+
+  - Nuevo `SoapInvoker` interno: puentea el token hacia los proxies generados (que no lo reciben), y cierra el canal siempre — `Close()` en el camino feliz, `Abort()` ante error, cancelación o `Close()` fallido. Aplicado a WSAA, WSFEv1, WSFEXv1, Padrón A5, WSCDC y WSCComu.
+  - Cancelar antes de empezar ni siquiera abre el socket.
+  - La cancelación sale como `OperationCanceledException`; antes quedaba envuelta en `ARCAServiceException` / `ARCAAuthException` y era indistinguible de una falla de ARCA.
+  - ⚠️ **Cancelar un pedido de CAE no cancela lo que ARCA ya hizo.** Abortar el canal corta la espera local, no la autorización remota. Por eso `SolicitarCaeAsync` y `FEXAuthorize` loguean un warning con CUIT, tipo, punto de venta y número del comprobante en vuelo: es lo que necesita la reconciliación para saber dónde mirar antes de re-emitir.
+
 - **La validez del login ticket ya no depende del `TZ` del proceso.** El vencimiento que devuelve WSAA se parseaba con `DateTime.Parse` sin `DateTimeStyles`, que pliega el offset a la hora local de la máquina y marca `Kind = Local`; del otro lado, `FileTokenCache` lo comparaba contra un `DateTime.UtcNow.AddHours(-3)` escrito a mano. Las dos mitades coincidían solo mientras el contenedor corriera en hora argentina.
 
   - `LoginTicketResponse.ExpirationTime` es ahora siempre un instante **UTC** (`Kind = Utc`), venga el XML con offset, con `Z` o sin nada (sin offset se interpreta como hora argentina, que es lo que manda WSAA).

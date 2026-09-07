@@ -7,14 +7,17 @@ using System.Globalization;
 using ElRoso.ARCA.Billing;
 using ElRoso.ARCA.Core;
 using ElRoso.ARCA.Read;
+using Microsoft.Extensions.Logging;
 
 internal sealed class WsfexOperations : IWsfexOperations
 {
     private readonly ARCAOptions options;
+    private readonly ILogger<WsfexOperations> logger;
 
-    public WsfexOperations(ARCAOptions options)
+    public WsfexOperations(ARCAOptions options, ILogger<WsfexOperations> logger)
     {
         this.options = options;
+        this.logger = logger;
     }
 
     public async Task<long> GetLastNumberAsync(
@@ -25,21 +28,32 @@ internal sealed class WsfexOperations : IWsfexOperations
         int bookPrefix,
         CancellationToken ct)
     {
+        // EN: A caller that already walked away gets no socket opened on its behalf.
+        // ES: A un llamador que ya se fue no se le abre ningún socket.
+        ct.ThrowIfCancellationRequested();
+
         try
         {
             var client = CreateClient();
-            var result = await client.FEXGetLast_CMPAsync(new WSFEXv1.FEXGetLast_CMPRequest
-            {
-                Auth = new WSFEXv1.ClsFEX_LastCMP
+            var result = await SoapInvoker.InvokeAsync(
+                client,
+                () => client.FEXGetLast_CMPAsync(new WSFEXv1.FEXGetLast_CMPRequest
                 {
-                    Token = token,
-                    Sign = sign,
-                    Cuit = cuit,
-                    Cbte_Tipo = docType,
-                    Pto_venta = bookPrefix,
-                },
-            });
+                    Auth = new WSFEXv1.ClsFEX_LastCMP
+                    {
+                        Token = token,
+                        Sign = sign,
+                        Cuit = cuit,
+                        Cbte_Tipo = docType,
+                        Pto_venta = bookPrefix,
+                    },
+                }),
+                ct);
             return result.FEXGetLast_CMPResult.FEXResult_LastCMP.Cbte_nro;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -55,6 +69,10 @@ internal sealed class WsfexOperations : IWsfexOperations
         long next,
         CancellationToken ct)
     {
+        // EN: A caller that already walked away gets no socket opened on its behalf.
+        // ES: A un llamador que ya se fue no se le abre ningún socket.
+        ct.ThrowIfCancellationRequested();
+
         var auth = new WSFEXv1.ClsFEXAuthRequest { Sign = sign, Token = token, Cuit = cuit };
 
         var request = new WSFEXv1.FEXAuthorizeRequest
@@ -92,7 +110,7 @@ internal sealed class WsfexOperations : IWsfexOperations
         try
         {
             var client = CreateClient();
-            var result = await client.FEXAuthorizeAsync(request);
+            var result = await SoapInvoker.InvokeAsync(client, () => client.FEXAuthorizeAsync(request), ct);
             var fexResult = result.FEXAuthorizeResult;
 
             if (fexResult.FEXErr.ErrCode != 0)
@@ -114,6 +132,18 @@ internal sealed class WsfexOperations : IWsfexOperations
         }
         catch (ARCAServiceException)
         {
+            throw;
+        }
+        catch (OperationCanceledException)
+        {
+            // EN: Same caveat as WSFEv1 — the CAE may exist at ARCA with nobody left to persist it.
+            // ES: Misma salvedad que en WSFEv1 — el CAE puede existir en ARCA sin nadie que lo persista.
+            logger.LogWarning(
+                "Export CAE request abandoned by the caller for CUIT {Cuit}, type {DocumentType}, point of sale {BookPrefix}, number {Number}. ARCA may have authorized it — reconcile before re-issuing.",
+                cuit,
+                (int)doc.BillingDocumentType,
+                doc.BillingDocumentBookPrefix,
+                next);
             throw;
         }
         catch (Exception ex)

@@ -24,6 +24,10 @@ internal sealed class InvoiceVerificationOperations : IInvoiceVerificationOperat
         InvoiceVerificationRequest request,
         CancellationToken ct)
     {
+        // EN: A caller that already walked away gets no socket opened on its behalf.
+        // ES: A un llamador que ya se fue no se le abre ningún socket.
+        ct.ThrowIfCancellationRequested();
+
         try
         {
             var client = new WSCDC.ServiceSoapClient(
@@ -34,7 +38,10 @@ internal sealed class InvoiceVerificationOperations : IInvoiceVerificationOperat
             var auth = new WSCDC.CmpAuthRequest { Sign = sign, Token = token, Cuit = issuingCuit };
             var cmpDatos = BuildCmpDatos(request);
 
-            var result = await client.ComprobanteConstatarAsync(auth, cmpDatos);
+            var result = await SoapInvoker.InvokeAsync(
+                client,
+                () => client.ComprobanteConstatarAsync(auth, cmpDatos),
+                ct);
             var resp = result.Body.ComprobanteConstatarResult;
 
             if (resp.Errors is { Length: > 0 })
@@ -56,6 +63,10 @@ internal sealed class InvoiceVerificationOperations : IInvoiceVerificationOperat
                 ProcessedDate = processedDate,
                 Observations = observations,
             };
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {

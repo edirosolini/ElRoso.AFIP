@@ -126,6 +126,19 @@ Sí, en todas las plataformas: el payload se protege con `IDataProtector` (purpo
 
 Esperado: el key ring de DataProtection quedó en el server viejo. Borrá el directorio y la próxima request va a refrescar contra WSAA. No es bug, es feature de seguridad.
 
+### "Cancelo el request y ARCA igual me emite el CAE"
+
+Toda la superficie asincrona recibe un `CancellationToken` y lo respeta: cancelar aborta el canal WCF y devuelve el control con `OperationCanceledException`.
+
+⚠️ **Pero abortar el canal corta la espera local, no el trabajo remoto.** Si ARCA ya proceso el `FECAESolicitar`, el CAE existe aunque vos ya no estes escuchando. Por eso la lib loguea un warning con CUIT, tipo, punto de venta y numero del comprobante en vuelo:
+
+```
+CAE request abandoned by the caller for CUIT 20123456789, type 1, point of sale 1, number 4521.
+ARCA may have authorized it — reconcile before re-issuing.
+```
+
+Ante ese warning, **no re-emitas**: reconciliá con `GetLastAuthorizedNumberAsync` + `GetAuthorizedAsync` (ver [v2.2.0](../CHANGELOG.md)). Re-emitir fabrica un duplicado fiscal que despues hay que anular con nota de credito.
+
 ### "Redeployeo y pierdo el cache de tokens"
 
 El TA vive 12 h y **WSAA no emite un segundo TA mientras el primero siga vigente** para el mismo (CUIT, servicio): responde algo del tipo `El CEE ya posee un TA valido para el acceso al WSN solicitado`. Si `TokenCacheDirectory` vive en el filesystem efímero del container, cada deploy tira el TA que ARCA sigue considerando vivo.
