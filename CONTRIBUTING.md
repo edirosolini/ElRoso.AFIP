@@ -89,9 +89,20 @@ required by RG 4367/E.
 
 ## Releases (solo maintainers)
 
-1. Actualizar `CHANGELOG.md` con la versión y los cambios.
-2. Crear tag SemVer: `git tag v1.2.3 && git push --tags`
-3. GitHub Actions arma y publica a NuGet.org automáticamente.
+El tag lo crea CI. Alcanza con que el bump entre a `mainline`:
+
+1. Subir `<Version>` en `ARCA/ElRoso.ARCA.csproj` — **es lo que se publica**, y va en el mismo PR
+   que el cambio.
+2. Actualizar `CHANGELOG.md` con esa versión y sus cambios.
+3. Mergear a `mainline`. El workflow *Tag on version bump* lee el `<Version>`, crea el tag `vX.Y.Z`
+   si todavía no existe y llama a *Release*, que arma, testea y publica a NuGet.org.
+
+⚠️ **El `<Version>` del csproj es la fuente de verdad, no el tag.** Cuando el tag se creaba a mano
+y el bump se olvidaba, salía una versión con otra adentro: `v2.2.0` se publicó con `2.1.2` en el
+csproj. Por eso el paso 1 va primero y el tag ya no lo pone una persona.
+
+Si hace falta publicar algo fuera de este camino, *Release* sigue teniendo `workflow_dispatch` con
+la versión como input. En ese caso **no** crea GitHub Release salvo que el tag ya exista.
 
 ## Code of Conduct
 

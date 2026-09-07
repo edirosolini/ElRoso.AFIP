@@ -1,0 +1,101 @@
+name: Tag on version bump
+
+# EN: Watches <Version> in the package csproj on mainline. When it names a version that has no tag
+#     yet, this creates the tag and calls Release. Merging a version bump is enough — nobody has to
+#     remember to tag by hand, which is how 2.2.0 shipped with 2.1.2 inside it.
+# ES: Vigila <Version> del csproj del paquete en mainline. Cuando nombra una versión que todavía no
+#     tiene tag, lo crea y llama a Release. Alcanza con mergear el bump — nadie tiene que acordarse
+#     de taggear a mano, que es como 2.2.0 salió con 2.1.2 adentro.
+on:
+  push:
+    branches:
+      - mainline
+    paths:
+      - 'ARCA/ElRoso.ARCA.csproj'
+  workflow_dispatch:
+
+jobs:
+  tag:
+    name: Create the tag if the version is new
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write   # required to push the tag
+
+    outputs:
+      version: ${{ steps.read.outputs.value }}
+      created: ${{ steps.tag.outputs.created }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Read the version from the csproj
+        id: read
+        run: |
+          set -euo pipefail
+          CSPROJ='ARCA/ElRoso.ARCA.csproj'
+
+          VERSION="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' "$CSPROJ" | head -1 | tr -d '[:space:]')"
+
+          if [ -z "$VERSION" ]; then
+            echo "::error::No <Version> element found in $CSPROJ"
+            exit 1
+          fi
+
+          # EN: Same SemVer shape Release enforces, so a typo fails here instead of halfway through.
+          # ES: La misma forma SemVer que exige Release, así un error de tipeo falla acá y no a mitad.
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.\-]+)?$ ]]; then
+            echo "::error::Version '$VERSION' is not a valid SemVer (X.Y.Z[-suffix])"
+            exit 1
+          fi
+
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "csproj version: $VERSION" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create and push the tag
+        id: tag
+        run: |
+          set -euo pipefail
+          VERSION='${{ steps.read.outputs.value }}'
+          TAG="v$VERSION"
+
+          # EN: Idempotent on purpose. Dependabot touches this csproj too, and every one of those
+          #     pushes lands here with a version that is already tagged.
+          # ES: Idempotente a propósito. Dependabot también toca este csproj, y cada uno de esos
+          #     push llega acá con una versión que ya tiene tag.
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "created=false" >> "$GITHUB_OUTPUT"
+            echo "$TAG already exists — nothing to do." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          if ! grep -q "^## \[$VERSION\]" CHANGELOG.md; then
+            echo "::warning::CHANGELOG.md has no '## [$VERSION]' section — tagging anyway."
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag -a "$TAG" -m "$TAG"
+          git push origin "$TAG"
+
+          echo "created=true" >> "$GITHUB_OUTPUT"
+          echo "Created $TAG on $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+
+  release:
+    name: Publish the new version
+    needs: tag
+    if: needs.tag.outputs.created == 'true'
+    # EN: Called directly instead of relying on the tag push. A tag pushed with GITHUB_TOKEN does
+    #     NOT trigger other workflows, so waiting for Release's own tag trigger would publish nothing.
+    # ES: Se llama directo en vez de confiar en el push del tag. Un tag pusheado con GITHUB_TOKEN NO
+    #     dispara otros workflows, así que esperar el trigger por tag de Release no publicaría nada.
+    uses: ./.github/workflows/release.yml
+    with:
+      version: ${{ needs.tag.outputs.version }}
+    secrets: inherit
+    permissions:
+      contents: write
+      packages: write

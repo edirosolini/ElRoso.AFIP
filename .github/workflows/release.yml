@@ -13,6 +13,16 @@ on:
         description: 'Version to publish (without leading v, e.g. 1.0.0-preview.1)'
         required: true
         type: string
+  # EN: Called by "Tag on version bump" right after it creates the tag. A tag pushed with
+  #     GITHUB_TOKEN does not trigger the push trigger above, so that job calls this one directly.
+  # ES: Lo llama "Tag on version bump" apenas crea el tag. Un tag pusheado con GITHUB_TOKEN no
+  #     dispara el trigger de arriba, así que ese job llama a éste directamente.
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version to publish (without leading v)'
+        required: true
+        type: string
 
 env:
   DOTNET_VERSION: '9.0.x'
@@ -59,6 +69,20 @@ jobs:
 
           echo "value=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Resolved version: $VERSION" >> "$GITHUB_STEP_SUMMARY"
+
+          # EN: The GitHub Release needs a tag that actually exists. On a tag push it is the ref we
+          #     are on; when called by the tagger the tag was just pushed, so look it up. A manual
+          #     dispatch may have no tag at all — leave it empty and skip the Release step.
+          # ES: El GitHub Release necesita un tag que exista de verdad. En un push de tag es la ref
+          #     en la que estamos; si nos llama el tagger, el tag se acaba de pushear, así que se
+          #     busca. Un dispatch manual puede no tener tag — queda vacío y se saltea ese paso.
+          if [ "$GITHUB_REF_TYPE" = 'tag' ]; then
+            echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+          elif git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
+            echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Restore
         run: dotnet restore ElRoso.ARCA.sln
@@ -112,11 +136,11 @@ jobs:
           retention-days: 90
 
       - name: Create GitHub Release
-        if: github.event_name == 'push'  # only on tag push, not manual dispatch
+        if: steps.version.outputs.tag != ''  # skipped by a manual dispatch with no tag behind it
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
           generate_release_notes: true
           prerelease: ${{ contains(steps.version.outputs.value, '-') }}
           files: |
